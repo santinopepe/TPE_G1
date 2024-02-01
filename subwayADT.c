@@ -5,7 +5,7 @@
 #include "subwayADT.h"
 #include <stdio.h>
 
-enum{MORNING=0, LUNCH, NOON, NIGHT};
+typedef enum{MORNING=0, LUNCH, NOON, NIGHT}HOURS;
 
 typedef struct info{ //PONER MEJOR NOMBRE
     char * name;
