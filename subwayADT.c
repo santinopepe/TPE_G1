@@ -116,7 +116,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
         sub->lines = realloc(sub->lines, pos*sizeof(Tline));
         sub->dimLines=pos;
         if(errno==ENOMEM || sub->lines == NULL){
-            OK = MEMERR;
+            errno = MEMERR;
             return;
         }
     }
@@ -152,7 +152,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     if (year >= largestYear){
         size_t newLargestYear = year+1;
         for (int i = largestYear; i < newLargestYear; i++ ){
-            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(1,sizeof(Tmonth));//PREG A PEPE SI ERA ESO LO QUE QUERIA HACER EN EL CALLOC si recolgue.
+            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(1,sizeof(Tmonth));
             if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth[i] == NULL){
                 errno = MEMERR;
                 return;
