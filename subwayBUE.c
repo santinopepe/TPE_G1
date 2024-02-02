@@ -127,7 +127,7 @@ void readTurnstiles(subADT sub, FILE * turnstiles){
         temp = strtok(NULL, DELIM);
         id = atoi(temp);
 
-        temp = strtok(NULL, DELIM);
+        temp = strtok(NULL, CHANGE_LINE);
         numPassen = atoi(temp);
 
         addDataTrips(sub, day, month, year, id, numPassen, start, end);
