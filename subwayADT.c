@@ -78,16 +78,16 @@ typedef struct subCDT{
 
 //Prototipos:
 
-//This function checks from what line a station is part of.
+// This function checks from what line a station is part of.
 // Returns a letter meaning the name of the line.
 static char getLine(size_t stationID, char * lines);
 
-//This function gives a number from 0 to 3 indicating what period the journey was made.
-//It returns a number from 0 to 3, this correlates with a given period.
+// This function gives a number from 0 to 3 indicating what period the journey was made.
+// It returns a number from 0 to 3, this correlates with a given period.
 static int getPeriod(char startHour, char endHour);
 
-//It checks if the year is a leap year or not.
-//Returns LEAPYEAR or !LEAPYEAR.
+// It checks if the year is a leap year or not.
+// Returns LEAPYEAR or !LEAPYEAR.
 static char leapYearCalc(size_t year);
 
 
@@ -140,7 +140,11 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     
     sub->lines[lineNum].passenTot += numPassen; // Here the number of passengers of a line increases.
 
-    sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][day] += numPassen; //Here we add passengers to a given day and period.
+    char isLeapYear = leapYearCalc(year) //This helps calculate the day of the week if it is a leap year.
+    // ACA HACER una calculadora de dia de la semana. ( Que devuelva  0 - 6, 0 es domingo 6 es sabado ).   
+
+
+    sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][day /* Esta mal esto habria que pasarle un numero de 0-6*/] += numPassen; //Here we add passengers to a given day and period.
 
     size_t largestYear = sub->lines[lineNum].station[stationID].yearEnd; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
@@ -164,7 +168,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
         //tambn podemos considerar el caso de febrero aparte y chequear si es leap solo cuando toca mes 2. Pense en hacer esto pero queria hablarlo con ustedes.
         char daysOfMonthLeap[] = {31,29,31,30,31,30,31,31,30,31,30,31};
         char daysOfMonthNoLeap[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-        if (leapYearCalc(year)){
+        if (isLeapYear){
             sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay = daysOfMonthLeap[month];
         } else{
             sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay = daysOfMonthNoLeap[month];
