@@ -6,6 +6,7 @@
 #define DELIM ";"
 #define CHANGE_LINE "\n"
 #define DATE_DELIM "/"
+#define HOUR_DELIM ":"
 
 subADT readStations(FILE * stations, subADT sub);
 void readTurnstiles(subADT sub, FILE * turnstiles);
@@ -17,8 +18,9 @@ void query3(subADT sub);
 
 
 int main(int numArg, char * argv[]){
-    if(3 <= numArg && numArg <= 5){
-        //falta manejo de errores
+    if(numArg <= 3 && numArg >= 5){
+        fprintf(stderr, "Error en la cantidad de argumentos");
+        exit(ARGERR);
     }
 
     FILE * fileTurnstiles = fopen(argv[1], "rt");
@@ -29,28 +31,20 @@ int main(int numArg, char * argv[]){
     }
     
     int year_start = 0, year_end = 0;
-    subADT sub;
 
     if (numArg == 4) {
         year_start = atoi(argv[3]);
         if (year_start <= 0) {
             //falta exit y manejo de errores
         }
-        sub = newSub(year_start, 0);
     }else if (numArg == 5) {
         year_end = atoi(argv[4]);
-        if (year_end <= 0) {
+        if (year_end <= 0 && year_start <= 0 && year_start >= year_end) {
             //falta exit y manejo de errores
         }
-
-        if (year_start > year_end) {
-            //falta exit y manejo de errores
-        }
-        sub = newSub(year_start, year_end);
-    } else {
-        sub = newSub(0, 0);
     }
-    
+
+    subADT sub = newSub(year_start, year_end);
 
     sub = readStations(fileStations, sub);
     readTurnstiles(sub, fileTurnstiles);
@@ -87,11 +81,12 @@ subADT readStations(FILE * stations, subADT sub){
 
         name = copyName(name, NULL);
 
-        char line = strtok(NULL, DELIM);
+        temp = strtok(NULL, DELIM);
+        char line = temp[0];
 
         strtok(NULL, CHANGE_LINE);
 
-        createStations(sub, line, name, id);
+        addStations(sub, line, name, id);
     }
     free(name);
     return sub;
@@ -117,11 +112,13 @@ void readTurnstiles(subADT sub, FILE * turnstiles){
         temp = strtok(NULL, DELIM);
         year = atoi(temp);
 
-        temp = strtok(NULL, DELIM);
-        strcpy(start, temp);
+        temp = strtok(NULL, HOUR_DELIM);
+        start = atoi(temp);
+        strtok(NULL, DELIM); //salteo los minutos
 
-        temp = strtok(NULL, DELIM);
-        strcpy(end, temp);
+        temp = strtok(NULL, HOUR_DELIM);
+        end = atoi(temp);
+        strtok(NULL, DELIM); //salteo los minutos
 
         temp = strtok(NULL, DELIM);
         id = atoi(temp);
@@ -129,7 +126,7 @@ void readTurnstiles(subADT sub, FILE * turnstiles){
         temp = strtok(NULL, DELIM);
         numPassen = atoi(temp);
 
-        addData(sub, day, month, year, id, numPassen, start, end);
+        addDataTrips(sub, day, month, year, id, numPassen, start, end);
     }
 }
 
