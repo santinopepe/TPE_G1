@@ -6,12 +6,12 @@
 #include <string.h>
 #include <errno.h>
 
-#define DIFF ('Z' - 'A') //Ver como cata carga los letras de la lineas si en mayuscula o miniscula.
+#define DIFF ('Z' - 'A')
 #define POS(n) ((n) - DIFF ) //This macro gives us the number of the line.
 #define PERIODSINTER 2 //This gives us the boundaries of the periods.
 #define CANTPERIODS 4 //This gives us the number of periods.
 #define LEAPYEAR 1
-
+#define TOTALMONTH 12
 
 
 
@@ -90,7 +90,9 @@ static int getPeriod(char startHour, char endHour);
 // Returns LEAPYEAR or !LEAPYEAR.
 static char leapYearCalc(size_t year);
 
-
+//This function gives us what day of a week a certain date represents.
+// For example, for 2/02/2024 it will give us the number 5, as that number represents friday.
+static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear)
 
 
 subADT newSub(size_t startYear, size_t endYear){
@@ -144,27 +146,40 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     
     sub->lines[lineNum].passenTot += numPassen; // Here the number of passengers of a line increases.
 
-    char isLeapYear = leapYearCalc(year) //This helps calculate the day of the week if it is a leap year.
-    // ACA HACER una calculadora de dia de la semana. ( Que devuelva  0 - 6, 0 es domingo 6 es sabado ).
+    char isLeapYear = leapYearCalc(year);  //This helps calculate the day of the week if it is a leap year.
 
-
-    sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][day] /* Esta mal esto habria que pasarle un numero de 0-6*/] += numPassen; //Here we add passengers to a given day and period.
+    sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][getDayOfWeek(day,month,year,isLeapYear)] += numPassen; //Here we add passengers to a given day and period.
 
     size_t largestYear = sub->lines[lineNum].station[stationID].maxYear; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
-
 
     //POSIBLE PROBLEMA cuando probamos nos fijamos.
     if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->lines[lineNum].station[stationID].maxYear == 0){
         //Aca creamos la matriz cunado nos pasan los dos parametros.
         sub->lines[lineNum].station[stationID].historyMonth = calloc(sub->yearEnd, sizeof(Tmonth *) )
+        if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth != NULL ){
+            errno = MEMERR;
+            return;
+        }
         for (int i = sub->yearStart; i <=  sub->yearEnd; i++){
-            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(12 /*cambiar magic num*/, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
+            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(TOTALMONTH, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
+            if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth[i] != NULL ){
+                errno = MEMERR;
+                return;
+            }
         }
         sub->lines[lineNum].station[stationID].maxYear = -1 //igualo a 0 para q no vuelva a entrar
     }else if ( sub->lines[lineNum].station[stationID].maxYear != -1 &&  year >= largestYear){
         sub->lines[lineNum].station[stationID].historyMonth = realloc(sub->lines[lineNum].station[stationID].historyMonth, year * sizeof(Tmonth *));
+        if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth == NULL ){ //ACA me dice esto: Comparison of array 'sub->lines[lineNum].station[stationID].historyMonth' equal to a null pointer is always false
+            errno = MEMERR;
+            return;
+        }
         for (int i = largestYear; i <= year; i++){
-            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(12 /*cambiar magic num*/, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
+            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(TOTALMONTH, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
+            if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth[i] != NULL ){
+                errno = MEMERR;
+                return;
+            }
         }
     }
 
@@ -195,10 +210,18 @@ static int getPeriod(char startHour, char endHour){
 }
 
 static char leapYearCalc(size_t year){
-    if ( year % 4 == 0 && year % 100 != 0 || year % 400 == 0 ){
+    if ( (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 ){ //This are the conditions to know if a given year is a leap year. 
         return LEAPYEAR;
     }
     return !LEAPYEAR;
 }
 
-static int getDayOfWeek(size_t day, size_t month, size_t year )
+static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear){
+        static size_t t[] = { 0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4 };
+        year -= month < 3;
+        size_t dayOfWeek = ( (y + y / 4 - y / 100 + y / 400 + t[m - 1] + d) % 7 ) - leapYear;
+        if (day == 0){ //With formula 0 position is given to sundays, in our case sundays need to have the value of 6.
+            return 6;
+        }
+        return dayOfWeek - 1; //We subtract 1 given that as we need sundays to have the value 6.
+}
