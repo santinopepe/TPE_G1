@@ -5,12 +5,18 @@ typedef struct subCDT * subADT;
 
 subADT newSub(void);
 
-// For the correct use of de TAD, you need to first use the function createStations, this will then enable you
-// to use the function addData.
-void createStations(subADT sub, char line, char * name, size_t stationID);
+// For the correct use of de TAD, you need to first use the function addStations, to add the name, id and line of each station , this will then enable you
+// to use the function addDataTrips.
 
-// This function adds the data that later will be processed.
-void addData(subADT sub, char day, char month, size_t year, size_t stationID, size_t cantPassen, char start, char end);
+//PODRIAMOS AGREGAR ARG DE STARTING Y ENDING YEAR Y ACLARAR QUE EN EL FRONT ES NECESAROP
+// MANDAR UN 0 EN AMBOS PARAMETROS SI NO NOS PASARON NADA COMO ARGUMENTO, 
+//asi nos ahorramos hacer la matriz de history tan grande ya desde el principio
+void addStations(subADT sub, char line, char * name, size_t stationID);
+
+// This function adds the data from each trip.
+
+
+void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t cantPassen, char start, char end);
 
 void freeSub(subADT sub);
 

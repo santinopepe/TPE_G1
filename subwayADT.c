@@ -2,6 +2,8 @@
 #include "subwayADT.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
 
 
 #define DIFF ('Z' - 'A') //Ver como cata carga los letras de la lineas si en mayuscula o miniscula.
@@ -50,7 +52,7 @@ typedef struct Tstation{
 }Tstation;
 
 typedef struct Tline{
-    size_t pasaenTot; //pasajeros por linea
+    size_t passenTot; //pasajeros por linea
     Tstation * station; //vector donde los id de las estaciones son la posicion al estos ser mayor a 0 CREO
     size_t dimStation;
     Tlist top; //QUERY 2
@@ -58,7 +60,9 @@ typedef struct Tline{
 
 
 typedef struct subCDT{
-    char * line; //vector
+    char * line; //vector donde se indica la linea a la que pertenece cada id
+
+    size_t idMax;
 
     Tline * lines; //vector donde cada posicion es una linea de subte y estan los results
     size_t dimLines;
@@ -84,23 +88,47 @@ static int getPeriod(char startHour, char endHour);
 
 //It checks if the year is a leap year or not.
 //Returns LEAPYEAR or !LEAPYEAR.
-static char leapYearCalc(size_t year)
+static char leapYearCalc(size_t year);
 
 
 
 
+subADT newSub(void){
+    return calloc(1,sizeof(subCDT));
+}
+
+
+void addStations(subADT sub, char line, char * name, size_t stationID){
+    errno=OK;
+    if(stationID >= sub->idMax){
+        realloc(sub->line, stationID);//it is char so it is not necessary to multiply by sizeof
+        sub->idMax=stationID;
+    }
+    if(errno==ENOMEM){
+        return;//ESTA BN ASI CHEQUEO DE ALLOC?????
+    }
+    char lineUp=toupper(line);
+    sub->line[stationID]=lineUp;
+    size_t pos=POS(lineUp);
+    if(sub->dimLines<=pos){
+        realloc(sub->lines, pos*sizeof(Tline));
+        sub->dimLines=pos;
+    }
+    sub->lines[pos].station->name=malloc(strlen(name));
+    //ERROR ALLOC
+     sub->lines[POS(lineUp)].station->name=strcpy(sub->lines[POS(lineUp)].station->name, name);
+    
+}
 
 
 
-
-
-void addData(subADT sub, char day, char month, size_t year, size_t stationID, size_t cantPassen, char start, char end){
+void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t numPassen, char start, char end){
     
     size_t lineNum = POS(getLine(stationID,sub->line)); //Here we get the line of the station. 
     
-    sub->lines[lineNum] += cantPassen; // Here the amount of passengers of a line increases.
+    sub->lines[lineNum].passenTot += numPassen; // Here the number of passengers of a line increases.
 
-    sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][day] += cantPassen //Here we add passengers to a given day and period.
+    sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][day] += numPassen; //Here we add passengers to a given day and period.
 
     size_t largestYear = sub->lines[lineNum].station[stationID].yearEnd; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
@@ -108,14 +136,17 @@ void addData(subADT sub, char day, char month, size_t year, size_t stationID, si
     if (year >= largestYear){
         size_t newLargestYear = year+1;
         for (int i = largestYear; i < newLargestYear; i++ ){
-            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(1,Tmonth);
+            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(1,sizeof(Tmonth));//PREG A PEPE SI ERA ESO LO QUE QUERIA HACER EN EL CALLOC
+            //FALTA CHEQUEAR QUE EL ALLOC NO TIRO ERROR
         }
         sub->lines[lineNum].station[stationID].yearEnd = newLargestYear;
     }
-    sub->lines[lineNum].station[stationID].historyMonth[year]->totalMonth += cantPassen;
+    sub->lines[lineNum].station[stationID].historyMonth[year]->totalMonth += numPassen;
 
     if (sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay == 0){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
         //Creo que se podria hacer mejor (osea un solo vector).
+        //podemos hacer una matriz osea -> char daysOfMonth[12][2]={{31,29,31,30,31,30,31,31,30,31,30,31},{31,28,31,30,31,30,31,31,30,31,30,31}}
+        //tambn podemos considerar el caso de febrero aparte y chequear si es leap solo cuando toca mes 2
         char daysOfMonthLeap[] = {31,29,31,30,31,30,31,31,30,31,30,31};
         char daysOfMonthNoLeap[] = {31,28,31,30,31,30,31,31,30,31,30,31};
         if (leapYearCalc(year)){
