@@ -3,7 +3,7 @@
 
 typedef struct subCDT * subADT;
 
-subADT newSub(void);
+subADT newSub(size_t startYear, size_t endYear);
 
 // For the correct use of de TAD, you need to first use the function addStations, to add the name, id and line of each station , this will then enable you
 // to use the function addDataTrips.

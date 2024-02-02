@@ -48,7 +48,7 @@ typedef struct Tstation{
     size_t pasenStation; //para query 2 no va a ser lo mas eficiente pero hay que usar el id para la busqueda de mas 
     size_t days[4][7]; //matriz de dias de la semana con periodos del dia
     Tmonth * historyMonth[12]; //le puse el asterisco para que busque su año y mes y ponga ahi la cantidad de gente
-    size_t yearEnd;
+    size_t maxYear;
 }Tstation;
 
 typedef struct Tline{
@@ -72,15 +72,15 @@ typedef struct subCDT{
     info days[4][7]; //QUERY 3 
 
     avgTop list4; //QUERY 4
+
+    size_t yearEnd;
+    size_t yearStart;
 }subCDT;
 
 
 
 //Prototipos:
 
-// This function checks from what line a station is part of.
-// Returns a letter meaning the name of the line.
-static char getLine(size_t stationID, char * lines);
 
 // This function gives a number from 0 to 3 indicating what period the journey was made.
 // It returns a number from 0 to 3, this correlates with a given period.
@@ -93,8 +93,12 @@ static char leapYearCalc(size_t year);
 
 
 
-subADT newSub(void){
-    return calloc(1,sizeof(subCDT));
+subADT newSub(size_t startYear, size_t endYear){
+    subADT aux = calloc(1,sizeof(subCDT));
+    aux->startYear =  startYear;
+    aux->endYear = endYear;
+    return aux;
+    
 }
 
 
@@ -136,7 +140,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
 void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t numPassen, char start, char end){
     errno = OK;
 
-    size_t lineNum = POS(getLine(stationID,sub->line)); //Here we get the line of the station. 
+    size_t lineNum = POS(lines[stationID]); //Here we get the line of the station. 
     
     sub->lines[lineNum].passenTot += numPassen; // Here the number of passengers of a line increases.
 
@@ -146,19 +150,15 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
 
     sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][day /* Esta mal esto habria que pasarle un numero de 0-6*/] += numPassen; //Here we add passengers to a given day and period.
 
-    size_t largestYear = sub->lines[lineNum].station[stationID].yearEnd; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
+    size_t largestYear = sub->lines[lineNum].station[stationID].maxYear; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
-    //Here we expand the vector so every year is part of it.
-    if (year >= largestYear){
+    if(sub->yearEnd != 0){
+        sub->lines[lineNum].station[stationID].maxYear = sub->yearEnd;
+    }else if (year >= largestYear && sub->lines[lineNum].station[stationID].maxYear != 0){//Here we expand the vector so every year is part of it.
         size_t newLargestYear = year+1;
-        for (int i = largestYear; i < newLargestYear; i++ ){
-            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(1,sizeof(Tmonth));
-            if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth[i] == NULL){
-                errno = MEMERR;
-                return;
-            }
-        }
-        sub->lines[lineNum].station[stationID].yearEnd = newLargestYear;
+        //Hacer realloc y despues rellenar con 0 con un for
+
+        sub->lines[lineNum].station[stationID].maxYear = newLargestYear;
     }
     sub->lines[lineNum].station[stationID].historyMonth[year]->totalMonth += numPassen;
 
@@ -175,10 +175,6 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
         }
     }
 
-}
-
-static char getLine(size_t stationID, char * lines){
-    return lines[stationID]; //Preguntar a Cata como va a cargar los datos de las lineas si es stationID o stationID - 1. 
 }
 
 
