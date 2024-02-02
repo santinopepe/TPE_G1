@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-
+#include <errno.h>
 
 #define DIFF ('Z' - 'A') //Ver como cata carga los letras de la lineas si en mayuscula o miniscula.
 #define POS(n) ((n) - DIFF ) //This macro gives us the number of the line.
@@ -140,7 +140,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
 void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t numPassen, char start, char end){
     errno = OK;
 
-    size_t lineNum = POS(lines[stationID]); //Here we get the line of the station. 
+    size_t lineNum = POS(sub->line[stationID]); //Here we get the line of the station.
     
     sub->lines[lineNum].passenTot += numPassen; // Here the number of passengers of a line increases.
 
@@ -152,6 +152,8 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
 
     size_t largestYear = sub->lines[lineNum].station[stationID].maxYear; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
+
+    //POSIBLE PROBLEMA cuando probamos nos fijamos.
     if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->lines[lineNum].station[stationID].maxYear == 0){
         //Aca creamos la matriz cunado nos pasan los dos parametros.
         sub->lines[lineNum].station[stationID].historyMonth = calloc(sub->yearEnd, sizeof(Tmonth *) )
@@ -178,6 +180,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
             sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay = daysOfMonthNoLeap[month];
         }
     }
+    sub->lines[lineNum].station[stationID].historyMonth[year][month].totalMonth += numPassen;
 
 }
 
@@ -197,3 +200,5 @@ static char leapYearCalc(size_t year){
     }
     return !LEAPYEAR;
 }
+
+static int getDayOfWeek(size_t day, size_t month, size_t year )
