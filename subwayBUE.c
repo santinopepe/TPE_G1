@@ -16,7 +16,7 @@ void query3(subADT sub);
 
 
 int main(int numArg, char * argv[]){
-    if(numArg != 3){
+    if(numArg != 3){ //Manu fijate que nos pueden 0 anios 1 anio 2 anios.
         //falta manejo de errores
     }
 

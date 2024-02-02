@@ -148,7 +148,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     if (year >= largestYear){
         size_t newLargestYear = year+1;
         for (int i = largestYear; i < newLargestYear; i++ ){
-            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(1,sizeof(Tmonth));//PREG A PEPE SI ERA ESO LO QUE QUERIA HACER EN EL CALLOC
+            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(1,sizeof(Tmonth));//PREG A PEPE SI ERA ESO LO QUE QUERIA HACER EN EL CALLOC si recolgue.
             if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth[i] == NULL){
                 OK = MEMERR;
                 return;
