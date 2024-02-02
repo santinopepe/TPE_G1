@@ -101,29 +101,41 @@ subADT newSub(void){
 void addStations(subADT sub, char line, char * name, size_t stationID){
     errno=OK;
     if(stationID >= sub->idMax){
-        realloc(sub->line, stationID);//it is char so it is not necessary to multiply by sizeof
+        sub->line = realloc(sub->line, stationID);//it is char so it is not necessary to multiply by sizeof
         sub->idMax=stationID;
+        if(errno==ENOMEM || sub->line == NULL){
+            OK = MEMERR;
+            return; //ESTA BN ASI CHEQUEO DE ALLOC?????
+        }
     }
-    if(errno==ENOMEM){
-        return;//ESTA BN ASI CHEQUEO DE ALLOC?????
-    }
+
     char lineUp=toupper(line);
     sub->line[stationID]=lineUp;
     size_t pos=POS(lineUp);
-    if(sub->dimLines<=pos){
-        realloc(sub->lines, pos*sizeof(Tline));
+    if(sub->dimLines <= pos){
+        sub->lines = realloc(sub->lines, pos*sizeof(Tline));
         sub->dimLines=pos;
+        if(errno==ENOMEM || sub->lines == NULL){
+            OK = MEMERR;
+            return;
+        }
     }
     sub->lines[pos].station->name=malloc(strlen(name));
-    //ERROR ALLOC
+
+    if(errno==ENOMEM || sub->lines[pos].station->name == NULL){
+        OK = MEMERR;
+        return;
+    }
      sub->lines[POS(lineUp)].station->name=strcpy(sub->lines[POS(lineUp)].station->name, name);
+    //ACA VA UN CHECK ERROR por el strcpy ????????????
     
 }
 
 
 
 void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t numPassen, char start, char end){
-    
+    errno = OK;
+
     size_t lineNum = POS(getLine(stationID,sub->line)); //Here we get the line of the station. 
     
     sub->lines[lineNum].passenTot += numPassen; // Here the number of passengers of a line increases.
@@ -137,7 +149,10 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
         size_t newLargestYear = year+1;
         for (int i = largestYear; i < newLargestYear; i++ ){
             sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(1,sizeof(Tmonth));//PREG A PEPE SI ERA ESO LO QUE QUERIA HACER EN EL CALLOC
-            //FALTA CHEQUEAR QUE EL ALLOC NO TIRO ERROR
+            if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth[i] == NULL){
+                OK = MEMERR;
+                return;
+            }
         }
         sub->lines[lineNum].station[stationID].yearEnd = newLargestYear;
     }
@@ -146,7 +161,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     if (sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay == 0){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
         //Creo que se podria hacer mejor (osea un solo vector).
         //podemos hacer una matriz osea -> char daysOfMonth[12][2]={{31,29,31,30,31,30,31,31,30,31,30,31},{31,28,31,30,31,30,31,31,30,31,30,31}}
-        //tambn podemos considerar el caso de febrero aparte y chequear si es leap solo cuando toca mes 2
+        //tambn podemos considerar el caso de febrero aparte y chequear si es leap solo cuando toca mes 2. Pense en hacer esto pero queria hablarlo con ustedes.
         char daysOfMonthLeap[] = {31,29,31,30,31,30,31,31,30,31,30,31};
         char daysOfMonthNoLeap[] = {31,28,31,30,31,30,31,31,30,31,30,31};
         if (leapYearCalc(year)){
