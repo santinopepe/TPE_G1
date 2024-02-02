@@ -2,6 +2,7 @@
 #include <string.h>
 #include "subwayADT.h"
 
+
 #define MAX_CHARS 50
 #define DELIM ";"
 #define CHANGE_LINE "\n"
@@ -19,7 +20,7 @@ void query3(subADT sub);
 
 int main(int numArg, char * argv[]){
     if(numArg <= 3 && numArg >= 5){
-        fprintf(stderr, "Error en la cantidad de argumentos");
+        fprintf(stderr, "Error, amount of arguments not valid");
         exit(ARGERR);
     }
 
@@ -27,7 +28,8 @@ int main(int numArg, char * argv[]){
     FILE * fileStations = fopen(argv[2], "rt");
 
     if(fileTurnstiles == NULL || fileStations == NULL){
-         //falta manejo de errores
+        fprintf(stderr, "Error, could not open files");
+        exit(OPENERR);
     }
     
     int year_start = 0, year_end = 0;
@@ -35,16 +37,22 @@ int main(int numArg, char * argv[]){
     if (numArg == 4) {
         year_start = atoi(argv[3]);
         if (year_start <= 0) {
-            //falta exit y manejo de errores
+            fprintf(stderr, "Error, imput date not valid");
+            exit(ERRDATE);
         }
     }else if (numArg == 5) {
         year_end = atoi(argv[4]);
         if (year_end <= 0 && year_start <= 0 && year_start >= year_end) {
-            //falta exit y manejo de errores
+            fprintf(stderr, "Error, imput date not valid");
+            exit(ERRDATE);
         }
     }
 
     subADT sub = newSub(year_start, year_end);
+    if(sub == NULL){
+        fprintf(stderr, "Error, could not assign memory");
+        exit(MEMERR);
+    }
 
     sub = readStations(fileStations, sub);
     readTurnstiles(sub, fileTurnstiles);
@@ -60,12 +68,6 @@ int main(int numArg, char * argv[]){
 }
 
 subADT readStations(FILE * stations, subADT sub){
-    
-
-    if(sub == NULL){
-        //falta manejo de errores
-    }
-
     char text[MAX_CHARS];
 
     fscanf(stations, "%s\n", text);
@@ -75,7 +77,8 @@ subADT readStations(FILE * stations, subADT sub){
     while(fgets(text, MAX_CHARS, stations) != NULL){
         temp = strtok(text, DELIM);
         if(temp == NULL){
-            //falta manejo de errores
+            fprintf(stderr, "Token error");
+            exit(TOKENERR);
         }
         size_t id = atoi(temp);
 
@@ -102,7 +105,8 @@ void readTurnstiles(subADT sub, FILE * turnstiles){
     while(fgets(text, MAX_CHARS, turnstiles) != NULL){
         temp = strtok(text, DATE_DELIM);
         if(temp == NULL){
-            //falta manejo de errores
+            fprintf(stderr, "Token error");
+            exit(TOKENERR);
         }
         day = atoi(temp);
 
@@ -123,7 +127,7 @@ void readTurnstiles(subADT sub, FILE * turnstiles){
         temp = strtok(NULL, DELIM);
         id = atoi(temp);
 
-        temp = strtok(NULL, DELIM);
+        temp = strtok(NULL, CHANGE_LINE);
         numPassen = atoi(temp);
 
         addDataTrips(sub, day, month, year, id, numPassen, start, end);
@@ -133,12 +137,14 @@ void readTurnstiles(subADT sub, FILE * turnstiles){
 char * copyName(char * name, char * aux){
     char * tok = strtok(aux, DELIM);
     if(tok == NULL){
-        //falta manejo de errores
+        fprintf(stderr, "Token error");
+        exit(TOKENERR);
     }
 
     name = realloc(name, strlen(tok)+1);
     if(name == NULL){
-        //falta manejo de errores
+        fprintf(stderr, "Error, could not assign memory");
+        exit(MEMERR);    
     }
     strcpy(name, tok);
 
