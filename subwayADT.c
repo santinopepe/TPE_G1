@@ -104,7 +104,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
         sub->line = realloc(sub->line, stationID);//it is char so it is not necessary to multiply by sizeof
         sub->idMax=stationID;
         if(errno==ENOMEM || sub->line == NULL){
-            OK = MEMERR;
+            errno = MEMERR;
             return; //ESTA BN ASI CHEQUEO DE ALLOC?????
         }
     }
@@ -123,7 +123,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
     sub->lines[pos].station->name=malloc(strlen(name));
 
     if(errno==ENOMEM || sub->lines[pos].station->name == NULL){
-        OK = MEMERR;
+        errno = MEMERR;
         return;
     }
      sub->lines[POS(lineUp)].station->name=strcpy(sub->lines[POS(lineUp)].station->name, name);
@@ -141,7 +141,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     sub->lines[lineNum].passenTot += numPassen; // Here the number of passengers of a line increases.
 
     char isLeapYear = leapYearCalc(year) //This helps calculate the day of the week if it is a leap year.
-    // ACA HACER una calculadora de dia de la semana. ( Que devuelva  0 - 6, 0 es domingo 6 es sabado ).   
+    // ACA HACER una calculadora de dia de la semana. ( Que devuelva  0 - 6, 0 es domingo 6 es sabado ).
 
 
     sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][day /* Esta mal esto habria que pasarle un numero de 0-6*/] += numPassen; //Here we add passengers to a given day and period.
@@ -154,7 +154,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
         for (int i = largestYear; i < newLargestYear; i++ ){
             sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(1,sizeof(Tmonth));//PREG A PEPE SI ERA ESO LO QUE QUERIA HACER EN EL CALLOC si recolgue.
             if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth[i] == NULL){
-                OK = MEMERR;
+                errno = MEMERR;
                 return;
             }
         }
