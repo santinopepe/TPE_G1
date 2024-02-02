@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <string.h>
+#include "subwayADT.h"
 
 #define MAX_CHARS 50
 #define DELIM ";"
 #define CHANGE_LINE "\n"
 #define DATE_DELIM "/"
 
-subADT readStations(FILE * stations);
+subADT readStations(FILE * stations, subADT sub);
 void readTurnstiles(subADT sub, FILE * turnstiles);
 char * copyName(char * name, char * aux);
 
@@ -16,7 +17,7 @@ void query3(subADT sub);
 
 
 int main(int numArg, char * argv[]){
-    if(numArg <= 3 && numArg >= 5){ //Manu fijate que nos pueden 0 anios 1 anio 2 anios.
+    if(3 <= numArg && numArg <= 5){
         //falta manejo de errores
     }
 
@@ -27,8 +28,31 @@ int main(int numArg, char * argv[]){
          //falta manejo de errores
     }
     
+    int year_start = 0, year_end = 0;
+    subADT sub;
 
-    subADT sub = readStations(fileStations);
+    if (numArg == 4) {
+        year_start = atoi(argv[3]);
+        if (year_start <= 0) {
+            //falta exit y manejo de errores
+        }
+        sub = newSub(year_start, 0);
+    }else if (numArg == 5) {
+        year_end = atoi(argv[4]);
+        if (year_end <= 0) {
+            //falta exit y manejo de errores
+        }
+
+        if (year_start > year_end) {
+            //falta exit y manejo de errores
+        }
+        sub = newSub(year_start, year_end);
+    } else {
+        sub = newSub(0, 0);
+    }
+    
+
+    sub = readStations(fileStations, sub);
     readTurnstiles(sub, fileTurnstiles);
 
     fclose(fileTurnstiles);
@@ -41,8 +65,8 @@ int main(int numArg, char * argv[]){
     free(sub);
 }
 
-subADT readStations(FILE * stations){
-    subADT sub = newSub();
+subADT readStations(FILE * stations, subADT sub){
+    
 
     if(sub == NULL){
         //falta manejo de errores
