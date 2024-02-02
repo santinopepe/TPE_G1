@@ -18,6 +18,28 @@ void addStations(subADT sub, char line, char * name, size_t stationID);
 
 void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t cantPassen, char start, char end);
 
+//sets an iterator to start looking at the lines from the one with most passengers to the one with the least
+void toBeginLines(subADT sub); //CONVIENE HACERLO CON RETURN INT PARA CHEQUEAR QUE SALIO TODO OK?
+
+//sets an iterator to start looking at the lines in 
+//alphabetic order and with the 3 stations with most passengers from each line 
+void toBeginTopbyLine(subADT sub);
+
+//returns if there is another line next
+int hasNextLine(subADT sub);
+int hasNextTopbyLine(subADT sub);
+
+/*
+returns the number of passengers in the line and uses the parameter line to return the line letter
+to which the amount of passengers belong
+and changes the iterator to the next line in order to start with the line with
+the most assengers and finish with the one with least
+*/
+int nextLine(subADT sub, char * line); 
+// uses the matrix res to return the top 3 stations with most passengers from one line
+// and changes the iterator to the next line in alphabetic order
+void nextTopbyLine(subADT sub, char * res[3]);
+
 void freeSub(subADT sub);
 
 //ENUM ERRORES:

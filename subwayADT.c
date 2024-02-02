@@ -68,6 +68,10 @@ typedef struct subCDT{
     size_t dimLines;
 
     Tlist list1; //QUERY 1
+    Tlist it1;
+
+    size_t it2; //QUERY 2 
+    //PREG SI ESTA OK EL IT 2 QUE VA A SER NOMAS EL INDICE EN EL VECTOR DE LINEAS
 
     info days[4][7]; //QUERY 3 
 
@@ -92,13 +96,19 @@ static char leapYearCalc(size_t year);
 
 //This function gives us what day of a week a certain date represents.
 // For example, for 2/02/2024 it will give us the number 5, as that number represents friday.
-static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear)
+static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear);
 
+//recursive function to add a node to a list of lines that goes 
+//from the one with most passengers to the one with least passengers
+static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char * line);
+
+//function that iterates in a vector with all the information from all the lines to create a list that goes from the line with the most passengers to the one with the least
+static void addListAmountPassen(subADT sub);
 
 subADT newSub(size_t startYear, size_t endYear){
     subADT aux = calloc(1,sizeof(subCDT));
-    aux->startYear =  startYear;
-    aux->endYear = endYear;
+    aux->yearStart =  startYear;
+    aux->yearEnd = endYear;
     return aux;
     
 }
@@ -155,7 +165,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     //POSIBLE PROBLEMA cuando probamos nos fijamos.
     if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->lines[lineNum].station[stationID].maxYear == 0){
         //Aca creamos la matriz cunado nos pasan los dos parametros.
-        sub->lines[lineNum].station[stationID].historyMonth = calloc(sub->yearEnd, sizeof(Tmonth *) )
+        sub->lines[lineNum].station[stationID].historyMonth = calloc(sub->yearEnd, sizeof(Tmonth *) );
         if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth != NULL ){
             errno = MEMERR;
             return;
@@ -167,7 +177,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
                 return;
             }
         }
-        sub->lines[lineNum].station[stationID].maxYear = -1 //igualo a 0 para q no vuelva a entrar
+        sub->lines[lineNum].station[stationID].maxYear = -1;//igualo a 0 para q no vuelva a entrar
     }else if ( sub->lines[lineNum].station[stationID].maxYear != -1 &&  year >= largestYear){
         sub->lines[lineNum].station[stationID].historyMonth = realloc(sub->lines[lineNum].station[stationID].historyMonth, year * sizeof(Tmonth *));
         if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth == NULL ){ //ACA me dice esto: Comparison of array 'sub->lines[lineNum].station[stationID].historyMonth' equal to a null pointer is always false
@@ -219,9 +229,67 @@ static char leapYearCalc(size_t year){
 static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear){
         static size_t t[] = { 0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4 };
         year -= month < 3;
-        size_t dayOfWeek = ( (y + y / 4 - y / 100 + y / 400 + t[m - 1] + d) % 7 ) - leapYear;
+        size_t dayOfWeek = ( (year + year / 4 - year / 100 + year / 400 + t[month - 1] + day) % 7 ) - leapYear;
         if (day == 0){ //With formula 0 position is given to sundays, in our case sundays need to have the value of 6.
             return 6;
         }
         return dayOfWeek - 1; //We subtract 1 given that as we need sundays to have the value 6.
 }
+
+
+void toBeginLines(subADT sub){
+    //armar lista en orden de cantidad de pasajeros
+    sub->it1=sub->list1;
+}
+
+void toBeginTopbyLine(subADT sub);
+
+//returns if there is another line next
+int hasNextLine(subADT sub);
+int hasNextTopbyLine(subADT sub);
+
+/*
+returns the number of passengers in the line and uses the parameter line to return the line letter
+to which the amount of passengers belong
+and changes the iterator to the next line in order to start with the line with
+the most assengers and finish with the one with least
+*/
+int nextLine(subADT sub, char * line); 
+// uses the matrix res to return the top 3 stations with most passengers from one line
+// and changes the iterator to the next line in alphabetic order
+void nextTopbyLine(subADT sub, char * res[3]);
+
+static void addListAmountPassen(subADT sub){
+    for (int i=0; i<sub->dimLines; i++){
+        if(sub->lines->dimStation!=0){
+            //chequear como hacer la conversion de la i q es la posicion del vector a la letra que es 
+            sub->list1=addListAmountPassenRec(sub->list1, sub->lines[i].passenTot,POS(i)); 
+        }
+    }
+}
+
+
+static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char * line){
+    errno=OK;
+    int c;
+    if(list==NULL|| list->numTot<numPassen){
+        c= list->numTot-numPassen;
+        if(list == NULL || c!=0 || (c == 0 && (*line<list->name))){
+              Tlist aux = malloc(sizeof(struct node));
+            if(errno == ENOMEM){
+                errno= MEMERR;
+                return list; 
+            }
+            aux->name=malloc(sizeof(char));
+            aux->name=strcpy(aux->name,line);
+            aux->numTot=numPassen;
+            aux->tail = list;
+            return aux;
+        }
+    }
+
+    //si no cumple con las condiciones pasa al siguinte
+        list->tail = addListAmountPassenRec(list->tail, numPassen, line);
+         return list;
+}
+    
