@@ -148,19 +148,23 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     // ACA HACER una calculadora de dia de la semana. ( Que devuelva  0 - 6, 0 es domingo 6 es sabado ).
 
 
-    sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][day /* Esta mal esto habria que pasarle un numero de 0-6*/] += numPassen; //Here we add passengers to a given day and period.
+    sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][day] /* Esta mal esto habria que pasarle un numero de 0-6*/] += numPassen; //Here we add passengers to a given day and period.
 
     size_t largestYear = sub->lines[lineNum].station[stationID].maxYear; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
-    if(sub->yearEnd != 0){
-        sub->lines[lineNum].station[stationID].maxYear = sub->yearEnd;
-    }else if (year >= largestYear && sub->lines[lineNum].station[stationID].maxYear != 0){//Here we expand the vector so every year is part of it.
-        size_t newLargestYear = year+1;
-        //Hacer realloc y despues rellenar con 0 con un for
-
-        sub->lines[lineNum].station[stationID].maxYear = newLargestYear;
+    if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->lines[lineNum].station[stationID].maxYear == 0){
+        //Aca creamos la matriz cunado nos pasan los dos parametros.
+        sub->lines[lineNum].station[stationID].historyMonth = calloc(sub->yearEnd, sizeof(Tmonth *) )
+        for (int i = sub->yearStart; i <=  sub->yearEnd; i++){
+            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(12 /*cambiar magic num*/, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
+        }
+        sub->lines[lineNum].station[stationID].maxYear = -1 //igualo a 0 para q no vuelva a entrar
+    }else if ( sub->lines[lineNum].station[stationID].maxYear != -1 &&  year >= largestYear){
+        sub->lines[lineNum].station[stationID].historyMonth = realloc(sub->lines[lineNum].station[stationID].historyMonth, year * sizeof(Tmonth *));
+        for (int i = largestYear; i <= year; i++){
+            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(12 /*cambiar magic num*/, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
+        }
     }
-    sub->lines[lineNum].station[stationID].historyMonth[year]->totalMonth += numPassen;
 
     if (sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay == 0){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
         //Creo que se podria hacer mejor (osea un solo vector).
