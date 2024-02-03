@@ -99,11 +99,20 @@ static char leapYearCalc(size_t year);
 static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear);
 
 //recursive function to add a node to a list of lines that goes 
-//from the one with most passengers to the one with least passengers
+//from the one with most passengers to the one with the least passengers
 static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char * line);
 
-//function that iterates in a vector with all the information from all the lines to create a list that goes from the line with the most passengers to the one with the least
+//function that iterates in a vector with all the information from all the lines to create
+// a list that goes from the line with the most passengers to the one with the least
 static void addListAmountPassen(subADT sub);
+
+//This function creates the list that contains the top 3 stations of each line.
+static void StationLineTop (subADT sub);
+
+//This is a recursive function that helps the creation of the top 3.
+//It returns the top 3 stations of each line.
+static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char  * TopFlag);
+
 
 subADT newSub(size_t startYear, size_t endYear){
     subADT aux = calloc(1,sizeof(subCDT));
@@ -297,7 +306,7 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char * line){
                 return list; 
             }
             aux->name=malloc(sizeof(char));
-            aux->name=strcpy(aux->name,line);
+            aux->name=strcpy(aux->name,line); //Me parece raro mejor no seria apuntar a la posicion del nombre ???
             aux->numTot=numPassen;
             aux->tail = list;
             return aux;
@@ -305,7 +314,35 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char * line){
     }
 
     //si no cumple con las condiciones pasa al siguinte
-        list->tail = addListAmountPassenRec(list->tail, numPassen, line);
+         list->tail = addListAmountPassenRec(list->tail, numPassen, line);
          return list;
 }
     
+static void StationLineTop (subADT sub){
+    for (size_t i = 0; i < sub->dimLines; i++){ //We move to each line.
+        for(size_t j = 0; j < sub->lines[i].dimStation; j++){ //We move inside each line to every station.
+            char * TopFlag = 0; //This flag helps not create all the list given that if a statiuon doesn't enter top 3  it quits the comparison.
+            sub->lines[i].top = StationLineTopRec(sub->lines[i].top, sub->lines[i].passenTot, sub->lines[i].station[j].name, TopFlag);
+        }
+    }
+}
+static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char  * TopFlag){
+    if (top == NULL || NumPassen > top->numTot){
+        Tlist aux = malloc(sizeof(struct node));
+        if(errno == ENOMEM){
+            errno= MEMERR;
+            return list;
+        }
+        aux->name = StationName;
+        aux->numTot=NumPassen;
+        aux->tail = list;
+        return aux;
+
+    }
+    (*TopFlag)++;
+    if (*TopFlag == 3){ //If this condition is true the station doesn't enter top 3, so we don't care.
+        return top;
+    }
+    top->tail = StationLineTopRec(top->tail, NumPassen, StationName, TopFlag);
+    return top;
+}
