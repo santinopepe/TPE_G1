@@ -72,7 +72,7 @@ typedef struct subCDT{
 
     size_t it2; //QUERY 2 
     //PREG SI ESTA OK EL IT 2 QUE VA A SER NOMAS EL INDICE EN EL VECTOR DE LINEAS
-
+    //No entiendo este iterador osea como funca.
     info days[4][7]; //QUERY 3 
 
     avgTop list4; //QUERY 4
@@ -242,11 +242,25 @@ void toBeginLines(subADT sub){
     sub->it1=sub->list1;
 }
 
-void toBeginTopbyLine(subADT sub);
+void toBeginTopbyLine(subADT sub){
+    //Armar lista con orden alfabetico.
+
+}
 
 //returns if there is another line next
-int hasNextLine(subADT sub);
-int hasNextTopbyLine(subADT sub);
+int hasNextLine(subADT sub){
+    errno = OK;
+    if(sub != NULL){ //Creo q hay que hacer esto que es progrmacion defensiva q es algo q nos corrigieron
+        return sub->it1 != NULL && sub->it1->tail != NULL;
+    } else{
+        errno = ARGERR; //Esto podria ser otro tipo de error, un PARAMERROR.
+        return 0;
+    }
+}
+
+int hasNextTopbyLine(subADT sub){
+
+}
 
 /*
 returns the number of passengers in the line and uses the parameter line to return the line letter
@@ -254,6 +268,7 @@ to which the amount of passengers belong
 and changes the iterator to the next line in order to start with the line with
 the most assengers and finish with the one with least
 */
+
 int nextLine(subADT sub, char * line); 
 // uses the matrix res to return the top 3 stations with most passengers from one line
 // and changes the iterator to the next line in alphabetic order
@@ -262,7 +277,8 @@ void nextTopbyLine(subADT sub, char * res[3]);
 static void addListAmountPassen(subADT sub){
     for (int i=0; i<sub->dimLines; i++){
         if(sub->lines->dimStation!=0){
-            //chequear como hacer la conversion de la i q es la posicion del vector a la letra que es 
+            //chequear como hacer la conversion de la i q es la posicion del vector a la letra que es
+            //Me parece que si haces sub->line[i] te va a dar la letra de la linea.
             sub->list1=addListAmountPassenRec(sub->list1, sub->lines[i].passenTot,POS(i)); 
         }
     }
@@ -272,9 +288,9 @@ static void addListAmountPassen(subADT sub){
 static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char * line){
     errno=OK;
     int c;
-    if(list==NULL|| list->numTot<numPassen){
-        c= list->numTot-numPassen;
-        if(list == NULL || c!=0 || (c == 0 && (*line<list->name))){
+    if(list==NULL || list->numTot<numPassen){
+        c = list->numTot-numPassen;
+        if(list == NULL || c!=0 || (c == 0 && (*line<list->name))){ //Me parece que esta rara la ultima condicion.
               Tlist aux = malloc(sizeof(struct node));
             if(errno == ENOMEM){
                 errno= MEMERR;
