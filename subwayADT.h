@@ -40,6 +40,8 @@ int nextLine(subADT sub, char * line);
 // and changes the iterator to the next line in alphabetic order
 void nextTopbyLine(subADT sub, char * res[3]);
 
+//Prepares data to get the top stations of a given period and day of week.
+void toBeginTopPeriod(subADT sub);
 
 
 //This function receives an ADT, a period, a weekday and a pointer to a char so it gives the name of the line.
@@ -49,7 +51,7 @@ char * getTopStationPeriod (subADT sub, int period, int weekday, char * line)
 void freeSub(subADT sub);
 
 //ENUM ERRORES:
-enum{OK=0, MEMERR, TOKENERR, ARGERR, OPENERR, NEXTERR,ERRID, ERRDATE};
+enum{OK=0, MEMERR, TOKENERR, ARGERR, OPENERR, NEXTERR, ERRID, ERRDATE, PARAMERR};
 /*
 MEMERR: Memory error
 TOKENERR: Token error
@@ -58,6 +60,7 @@ OPENERR: Error opening archives
 NEXTERR: Error on the iterator
 ERRID: Error on a invalid id
 ERRDATE: Error on a invalid date
+PARAMERR: Error in the parameter provided by the frontend
 */
 
 #endif //TPE_G1_SUBWAYADT_H

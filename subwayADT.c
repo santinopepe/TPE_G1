@@ -104,6 +104,7 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char * line);
 // a list that goes from the line with the most passengers to the one with the least
 static void addListAmountPassen(subADT sub);
 
+
 //This function creates the list that contains the top 3 stations of each line.
 static void StationLineTop (subADT sub);
 
@@ -111,8 +112,9 @@ static void StationLineTop (subADT sub);
 //It returns the top 3 stations of each line.
 static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char  * TopFlag);
 
-//This function completes the days matrix
-static void PeriodWeekDayTop(subADT sub);
+
+//Q3:
+
 
 //Returns the ID of the most popular station by period and weekday,
 //it complements the following function PeriodWeekDayTop.
@@ -175,8 +177,6 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][getDayOfWeek(day,month,year,isLeapYear)] += numPassen; //Here we add passengers to a given day and period.
 
 
-
-
     size_t largestYear = sub->lines[lineNum].station[stationID].maxYear; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
     //POSIBLE PROBLEMA cuando probamos nos fijamos.
@@ -208,21 +208,27 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
                 return;
             }
         }
+
+    }
+    if (sub->yearStart <= year && (sub->yearEnd >= year || sub->yearEnd == 0)){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
+
+        sub->lines[lineNum].station[stationID].historyMonth[year][month].totalMonth += numPassen;
+
+        if (sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay == 0){
+            //Creo que se podria hacer mejor (osea un solo vector).
+            //podemos hacer una matriz osea -> char daysOfMonth[12][2]={{31,29,31,30,31,30,31,31,30,31,30,31},{31,28,31,30,31,30,31,31,30,31,30,31}}
+            //tambn podemos considerar el caso de febrero aparte y chequear si es leap solo cuando toca mes 2. Pense en hacer esto pero queria hablarlo con ustedes.
+            char daysOfMonthLeap[] = {31,29,31,30,31,30,31,31,30,31,30,31};
+            char daysOfMonthNoLeap[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+            if (isLeapYear){
+                sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay = daysOfMonthLeap[month];
+            } else{
+                sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay = daysOfMonthNoLeap[month];
+            }
+        }
+
     }
 
-    if (sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay == 0){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
-        //Creo que se podria hacer mejor (osea un solo vector).
-        //podemos hacer una matriz osea -> char daysOfMonth[12][2]={{31,29,31,30,31,30,31,31,30,31,30,31},{31,28,31,30,31,30,31,31,30,31,30,31}}
-        //tambn podemos considerar el caso de febrero aparte y chequear si es leap solo cuando toca mes 2. Pense en hacer esto pero queria hablarlo con ustedes.
-        char daysOfMonthLeap[] = {31,29,31,30,31,30,31,31,30,31,30,31};
-        char daysOfMonthNoLeap[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-        if (isLeapYear){
-            sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay = daysOfMonthLeap[month];
-        } else{
-            sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay = daysOfMonthNoLeap[month];
-        }
-    }
-    sub->lines[lineNum].station[stationID].historyMonth[year][month].totalMonth += numPassen;
 
 }
 
@@ -339,11 +345,11 @@ static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName,
         Tlist aux = malloc(sizeof(struct node));
         if(errno == ENOMEM){
             errno= MEMERR;
-            return list;
+            return top;
         }
         aux->name = StationName;
         aux->numTot=NumPassen;
-        aux->tail = list;
+        aux->tail = top;
         return aux;
 
     }
@@ -356,9 +362,17 @@ static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName,
 }
 
 
+
+
+
+
 // Esto es un kilombo y bastante feo a mi parecer PENSAR DEVUElTA
 // Podriamos hacer un vector cuando cargamos los datos y usar swaps??? Me parce mejor.
-static void PeriodWeekDayTop(subADT sub){
+void toBeginTopPeriod(subADT sub){
+    if (sub == NULL){
+        errno = PARAMERR;
+        return;
+    }
     for (int i = 0; i < CANTWEEKDAYS; i++){
         for (int j = 0; j < CANTPERIODS; j++){
             sub->days[j][i] = TopPeriodStation(sub,i,j);
@@ -398,4 +412,10 @@ char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
     (*line) = sub->line[id];
     return sub->lines[POS((*line))].station[id].name;
 }
+
+
+
+
+
+
 
