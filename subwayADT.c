@@ -28,6 +28,7 @@ typedef struct node{
 
 typedef struct avgTop{
     char * name;
+    char line;
     float avg;
     size_t year;
     char month;
@@ -73,7 +74,7 @@ typedef struct subCDT{
     //No entiendo este iterador osea como funca.
     size_t days[CANTPERIODS][CANTWEEKDAYS]; //QUERY 3
 
-    avgTop list4; //QUERY 4
+    avgTop * list4; //QUERY 4
 
     size_t yearEnd;
     size_t yearStart;
@@ -414,8 +415,53 @@ char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
 }
 
 
+static void TopStationMonth(subADT sub){
+    for(size_t i=0; i < sub->dimLines; i++){
+        for(size_t j=0; j < sub->lines[i].dimStation; j++){
+            char * topMonth = 0;
+            float * monthAvg = 0;
+            size_t topYear = bestStationMonth(sub->lines[i].station[j], topMonth, monthAvg, sub->yearStart, sub->yearEnd);
 
+            sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, &monthAvg, sub->line[j], sub->lines[i].station[j].name);
+        }
+    }
+}
 
+static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start, size_t end){
+    size_t maxYear=0;
+    for(size_t i=start; i < end; i++){
+        for(int j=0; j < TOTALMONTH; j++){
+            float tempAvg = station.historyMonth[i][j].totalMonth / station.historyMonth[i][j].numDay; //SI NO FUNCIONA Q4 DAR VUELTA I Y J
+            if(monthAvg  <= tempAvg){
+                if((monthAvg  == tempAvg && maxYear < i) || (maxYear == i && (*topMonth) < j) || monthAvg < tempAvg){
+                    monthAvg  = tempAvg;
+                    maxYear = i;
+                    topMonth = j;
+                }
+            }
+        }
+    }
+    return maxYear;
+}
 
+static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, float monthAvg, char line, char * name){
+    if(list == NULL || monthAvg >= list->avg){
+        if((monthAvg == list->avg && strcasecmp(list->name, name) > 0) || monthAvg >= list->avg || list == NULL){
+            avgTop * aux = malloc(sizeof(struct avgTop));
+            if(aux == NULL){
+                errno == MEMERR;
+                return list;
+            }
+            aux->avg = monthAvg;
+            aux->line= line;
+            aux->month = topMonth;
+            aux->name = name;
+            aux->year = topYear;
+            aux->tail = list;
+            return aux;
+        }
+    }
 
-
+    list->tail = createAvgTopRec(list->tail, topMonth, topYear, monthAvg, line, name);
+    return list;
+}
