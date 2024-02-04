@@ -6,21 +6,19 @@
 #include <string.h>
 #include <errno.h>
 
-#define DIFF ('Z' - 'A')
-#define POS(n) ((n) - DIFF ) //This macro gives us the number of the line.
+#define DIFF ('A')
+#define POS(n) ((n) - DIFF) //This macro gives us the number of the line.
 #define PERIODSINTER 2 //This gives us the boundaries of the periods.
 #define CANTPERIODS 4 //This gives us the number of periods.
 #define LEAPYEAR 1
 #define TOTALMONTH 12
 #define CANTWEEKDAYS 7
+#define NOID -1
+#define NOTOPSTATION "S/D"
 
 
 typedef enum{MORNING=0, LUNCH, NOON, NIGHT}HOURS;
 
-typedef struct info{ //PONER MEJOR NOMBRE
-    char * name;
-    size_t numPasan;
-}info;
 
 typedef struct node{
     char * name; //para el query 1 es la linea y para el query 2 el nombre
@@ -73,7 +71,7 @@ typedef struct subCDT{
     size_t it2; //QUERY 2 
     //PREG SI ESTA OK EL IT 2 QUE VA A SER NOMAS EL INDICE EN EL VECTOR DE LINEAS
     //No entiendo este iterador osea como funca.
-    info days[CANTPERIODS][CANTWEEKDAYS]; //QUERY 3
+    size_t days[CANTPERIODS][CANTWEEKDAYS]; //QUERY 3
 
     avgTop list4; //QUERY 4
 
@@ -112,6 +110,13 @@ static void StationLineTop (subADT sub);
 //This is a recursive function that helps the creation of the top 3.
 //It returns the top 3 stations of each line.
 static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char  * TopFlag);
+
+//This function completes the days matrix
+static void PeriodWeekDayTop(subADT sub);
+
+//Returns the ID of the most popular station by period and weekday,
+//it complements the following function PeriodWeekDayTop.
+static size_t TopPeriodStation (subADT sub, int weekday, int period);
 
 
 subADT newSub(size_t startYear, size_t endYear){
@@ -351,25 +356,46 @@ static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName,
 }
 
 
-//Esto es un kilombo y bastante feo a mi parecer PENSAR DEVUElTA
+// Esto es un kilombo y bastante feo a mi parecer PENSAR DEVUElTA
 // Podriamos hacer un vector cuando cargamos los datos y usar swaps??? Me parce mejor.
 static void PeriodWeekDayTop(subADT sub){
-    size_t TopPeriodStation;
-    size_t TopStationPassen = 0;
     for (int i = 0; i < CANTWEEKDAYS; i++){
         for (int j = 0; j < CANTPERIODS; j++){
-            for (size_t k = 0; k < sub->dimLines; k++){ //Recorro las lineas
-                for (size_t h = 0; h < sub->lines[k].dimStation){ //Recorro las estaciones dentro de las lineas
-                    if (sub->lines[k].station[h].days[j][i] == TopStationPassen ){
-
-                    }
-                }
-            }
+            sub->days[j][i] = TopPeriodStation(sub,i,j);
         }
     }
 }
 
+static size_t TopPeriodStation (subADT sub, int weekday, int period){
+    size_t TopID;
+    size_t TopStationPassen = 0;
+    for (size_t i = 0; i < sub->dimLines; i++){ //Recorro las lineas
+        for (size_t j = 0;  j < sub->lines[i].dimStation; j++){ //Recorro las estaciones dentro de las lineas
+            if (TopStationPassen <= sub->lines[i].station[j].days[period][weekday]){
+                if ((TopStationPassen == sub->lines[i].station[j].days[period][weekday] && (strcasecmp(sub->lines[POS(sub->line[TopID])].station[TopID].name,sub->lines[i].station[j].name)) > 0) ||  TopStationPassen != sub->lines[i].station[j].days[period][weekday]){ //Un quilombo el strcasecmp puede estar mal revisar.
+                    TopStationPassen = TopStationPassen == sub->lines[i].station[j].days[period][weekday];
+                    TopID = j;
+                }
+            }
+        }
+    }
+    if (TopStationPassen == 0){
+        return NOID;
+    }
+    return TopID;
+}
 
-
-
+char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
+    if ( (period < 0 || period > CANTPERIODS) || (weekday > CANTWEEKDAYS || weekday < 0)){
+        (*line) = NULL;
+        return NULL;
+    }
+    size_t id = sub->days[period][weekday];
+    if (id == NOID){
+        (*line) = NULL;
+        return NOTOPSTATION;
+    }
+    (*line) = sub->line[id];
+    return sub->lines[POS((*line))].station[id].name;
+}
 
