@@ -12,7 +12,7 @@
 #define CANTPERIODS 4 //This gives us the number of periods.
 #define LEAPYEAR 1
 #define TOTALMONTH 12
-
+#define CANTWEEKDAYS 7
 
 
 typedef enum{MORNING=0, LUNCH, NOON, NIGHT}HOURS;
@@ -46,8 +46,8 @@ typedef struct Tmonth{
 typedef struct Tstation{
     char * name;
     size_t pasenStation; //para query 2 no va a ser lo mas eficiente pero hay que usar el id para la busqueda de mas 
-    size_t days[4][7]; //matriz de dias de la semana con periodos del dia
-    Tmonth * historyMonth[12]; //le puse el asterisco para que busque su año y mes y ponga ahi la cantidad de gente
+    size_t days[CANTPERIODS][CANTWEEKDAYS]; //matriz de dias de la semana con periodos del dia
+    Tmonth * historyMonth[TOTALMONTH]; //le puse el asterisco para que busque su año y mes y ponga ahi la cantidad de gente
     size_t maxYear;
 }Tstation;
 
@@ -73,7 +73,7 @@ typedef struct subCDT{
     size_t it2; //QUERY 2 
     //PREG SI ESTA OK EL IT 2 QUE VA A SER NOMAS EL INDICE EN EL VECTOR DE LINEAS
     //No entiendo este iterador osea como funca.
-    info days[4][7]; //QUERY 3 
+    info days[CANTPERIODS][CANTWEEKDAYS]; //QUERY 3
 
     avgTop list4; //QUERY 4
 
@@ -168,6 +168,9 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     char isLeapYear = leapYearCalc(year);  //This helps calculate the day of the week if it is a leap year.
 
     sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][getDayOfWeek(day,month,year,isLeapYear)] += numPassen; //Here we add passengers to a given day and period.
+
+
+
 
     size_t largestYear = sub->lines[lineNum].station[stationID].maxYear; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
@@ -346,3 +349,27 @@ static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName,
     top->tail = StationLineTopRec(top->tail, NumPassen, StationName, TopFlag);
     return top;
 }
+
+
+//Esto es un kilombo y bastante feo a mi parecer PENSAR DEVUElTA
+// Podriamos hacer un vector cuando cargamos los datos y usar swaps??? Me parce mejor.
+static void PeriodWeekDayTop(subADT sub){
+    size_t TopPeriodStation;
+    size_t TopStationPassen = 0;
+    for (int i = 0; i < CANTWEEKDAYS; i++){
+        for (int j = 0; j < CANTPERIODS; j++){
+            for (size_t k = 0; k < sub->dimLines; k++){ //Recorro las lineas
+                for (size_t h = 0; h < sub->lines[k].dimStation){ //Recorro las estaciones dentro de las lineas
+                    if (sub->lines[k].station[h].days[j][i] == TopStationPassen ){
+
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
