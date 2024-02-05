@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 
+
 #define DIFF ('A')
 #define POS(n) ((n) - DIFF) //This macro gives us the number of the line.
 #define PERIODSINTER 2 //This gives us the boundaries of the periods.
@@ -18,7 +19,6 @@
 
 
 typedef enum{MORNING=0, LUNCH, NOON, NIGHT}HOURS;
-
 
 typedef struct node{
     char * name; //para el query 1 es la linea y para el query 2 el nombre
@@ -44,7 +44,8 @@ typedef struct Tmonth{
 
 typedef struct Tstation{
     char * name;
-    size_t pasenStation; //para query 2 no va a ser lo mas eficiente pero hay que usar el id para la busqueda de mas 
+    char line;
+    size_t passenStation; //para query 2 no va a ser lo mas eficiente pero hay que usar el id para la busqueda de mas 
     size_t days[CANTPERIODS][CANTWEEKDAYS]; //matriz de dias de la semana con periodos del dia
     Tmonth * historyMonth[TOTALMONTH]; //le puse el asterisco para que busque su año y mes y ponga ahi la cantidad de gente
     size_t maxYear;
@@ -52,26 +53,21 @@ typedef struct Tstation{
 
 typedef struct Tline{
     size_t passenTot; //pasajeros por linea
-    Tstation * station; //vector donde los id de las estaciones son la posicion al estos ser mayor a 0 CREO
-    size_t dimStation;
     Tlist top; //QUERY 2
 }Tline;
 
 
 typedef struct subCDT{
-    char * line; //vector donde se indica la linea a la que pertenece cada id
+    Tstation * station; //vector donde cada posicion es una linea de subte y estan los results
+    size_t dimStation;
 
-    size_t idMax;
-
-    Tline * lines; //vector donde cada posicion es una linea de subte y estan los results
+    Tline * lines; //para el Q1 y Q2 (se guardan los datos en el mismo struct/vector)
     size_t dimLines;
+    size_t it2; //QUERY 2 (es el iterador para acceder a cada linea)(es el indice)
 
-    Tlist list1; //QUERY 1
+    Tlist list1;
     Tlist it1;
 
-    size_t it2; //QUERY 2 
-    //PREG SI ESTA OK EL IT 2 QUE VA A SER NOMAS EL INDICE EN EL VECTOR DE LINEAS
-    //No entiendo este iterador osea como funca.
     size_t days[CANTPERIODS][CANTWEEKDAYS]; //QUERY 3
 
     avgTop * list4; //QUERY 4
@@ -133,78 +129,65 @@ subADT newSub(size_t startYear, size_t endYear){
 
 void addStations(subADT sub, char line, char * name, size_t stationID){
     errno=OK;
-    if(stationID >= sub->idMax){
-        sub->line = realloc(sub->line, stationID);//it is char so it is not necessary to multiply by sizeof
-        sub->idMax=stationID;
-        if(errno==ENOMEM || sub->line == NULL){
+    if(stationID >= sub->dimStation){
+        sub->station = realloc(sub->station, stationID*sizeof(Tstation));
+        sub->dimStation=stationID;
+        if(errno==ENOMEM || sub->station == NULL){
             errno = MEMERR;
             return; //ESTA BN ASI CHEQUEO DE ALLOC?????
         }
     }
 
     char lineUp=toupper(line);
-    sub->line[stationID]=lineUp;
-    size_t pos=POS(lineUp);
-    if(sub->dimLines <= pos){
-        sub->lines = realloc(sub->lines, pos*sizeof(Tline));
-        sub->dimLines=pos;
-        if(errno==ENOMEM || sub->lines == NULL){
-            errno = MEMERR;
-            return;
-        }
-    }
-    sub->lines[pos].station->name=malloc(strlen(name));
+    sub->station[stationID].line=lineUp;
+    sub->station[stationID].name = malloc(strlen(name));
 
-    if(errno==ENOMEM || sub->lines[pos].station->name == NULL){
+    if(errno==ENOMEM || sub->station[stationID].name == NULL){
         errno = MEMERR;
         return;
     }
-     sub->lines[POS(lineUp)].station->name=strcpy(sub->lines[POS(lineUp)].station->name, name);
+    sub->station[stationID].name=strcpy(sub->station[stationID].name, name);
     //ACA VA UN CHECK ERROR por el strcpy ????????????
-    
 }
-
 
 
 void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t numPassen, char start, char end){
     errno = OK;
-
-    size_t lineNum = POS(sub->line[stationID]); //Here we get the line of the station.
     
-    sub->lines[lineNum].passenTot += numPassen; // Here the number of passengers of a line increases.
+    sub->station[stationID].passenStation += numPassen; // Here the number of passengers of a station increases.
 
     char isLeapYear = leapYearCalc(year);  //This helps calculate the day of the week if it is a leap year.
 
-    sub->lines[lineNum].station[stationID].days[getPeriod(start,end)][getDayOfWeek(day,month,year,isLeapYear)] += numPassen; //Here we add passengers to a given day and period.
+    sub->station[stationID].days[getPeriod(start,end)][getDayOfWeek(day,month,year,isLeapYear)] += numPassen; //Here we add passengers to a given day and period.
 
 
-    size_t largestYear = sub->lines[lineNum].station[stationID].maxYear; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
+    size_t largestYear = sub->station[stationID].maxYear; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
     //POSIBLE PROBLEMA cuando probamos nos fijamos.
-    if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->lines[lineNum].station[stationID].maxYear == 0){
+    if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->station[stationID].maxYear == 0){
         //Aca creamos la matriz cunado nos pasan los dos parametros.
-        sub->lines[lineNum].station[stationID].historyMonth = calloc(sub->yearEnd, sizeof(Tmonth *) );
-        if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth != NULL ){
+        sub->station[stationID].historyMonth = calloc(sub->yearEnd, sizeof(Tmonth *) ); //CHEQUEAR ESTO (le ponemos historyMonth[12] se soluciona)
+        if (errno == ENOMEM || sub->station[stationID].historyMonth != NULL ){
             errno = MEMERR;
             return;
         }
         for (int i = sub->yearStart; i <=  sub->yearEnd; i++){
-            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(TOTALMONTH, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
-            if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth[i] != NULL ){
+            sub->station[stationID].historyMonth[i] = calloc(TOTALMONTH, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
+            if (errno == ENOMEM || sub->station[stationID].historyMonth[i] != NULL ){
                 errno = MEMERR;
                 return;
             }
         }
-        sub->lines[lineNum].station[stationID].maxYear = -1;//igualo a 0 para q no vuelva a entrar
-    }else if ( sub->lines[lineNum].station[stationID].maxYear != -1 &&  year >= largestYear){
-        sub->lines[lineNum].station[stationID].historyMonth = realloc(sub->lines[lineNum].station[stationID].historyMonth, year * sizeof(Tmonth *));
-        if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth == NULL ){ //ACA me dice esto: Comparison of array 'sub->lines[lineNum].station[stationID].historyMonth' equal to a null pointer is always false
+        sub->station[stationID].maxYear = -1;//igualo a 0 para q no vuelva a entrar
+    }else if ( sub->station[stationID].maxYear != -1 &&  year >= largestYear){
+        sub->station[stationID].historyMonth = realloc(sub->station[stationID].historyMonth, year * sizeof(Tmonth *)); //CHEQUEAR ES COMO EL DE LA LINEA 171
+        if (errno == ENOMEM || sub->station[stationID].historyMonth == NULL ){ //ACA me dice esto: Comparison of array 'sub->lines[lineNum].station[stationID].historyMonth' equal to a null pointer is always false
             errno = MEMERR;
             return;
         }
         for (int i = largestYear; i <= year; i++){
-            sub->lines[lineNum].station[stationID].historyMonth[i] = calloc(TOTALMONTH, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
-            if (errno == ENOMEM || sub->lines[lineNum].station[stationID].historyMonth[i] != NULL ){
+            sub->station[stationID].historyMonth[i] = calloc(TOTALMONTH, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
+            if (errno == ENOMEM || sub->station[stationID].historyMonth[i] != NULL ){
                 errno = MEMERR;
                 return;
             }
@@ -213,24 +196,21 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     }
     if (sub->yearStart <= year && (sub->yearEnd >= year || sub->yearEnd == 0)){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
 
-        sub->lines[lineNum].station[stationID].historyMonth[year][month].totalMonth += numPassen;
+        sub->station[stationID].historyMonth[year][month].totalMonth += numPassen;
 
-        if (sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay == 0){
+        if (sub->station[stationID].historyMonth[year][month].numDay == 0){
             //Creo que se podria hacer mejor (osea un solo vector).
             //podemos hacer una matriz osea -> char daysOfMonth[12][2]={{31,29,31,30,31,30,31,31,30,31,30,31},{31,28,31,30,31,30,31,31,30,31,30,31}}
             //tambn podemos considerar el caso de febrero aparte y chequear si es leap solo cuando toca mes 2. Pense en hacer esto pero queria hablarlo con ustedes.
             char daysOfMonthLeap[] = {31,29,31,30,31,30,31,31,30,31,30,31};
             char daysOfMonthNoLeap[] = {31,28,31,30,31,30,31,31,30,31,30,31};
             if (isLeapYear){
-                sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay = daysOfMonthLeap[month];
+                sub->station[stationID].historyMonth[year][month].numDay = daysOfMonthLeap[month];
             } else{
-                sub->lines[lineNum].station[stationID].historyMonth[year][month].numDay = daysOfMonthNoLeap[month];
+                sub->station[stationID].historyMonth[year][month].numDay = daysOfMonthNoLeap[month];
             }
         }
-
     }
-
-
 }
 
 
@@ -259,6 +239,8 @@ static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear){
         }
         return dayOfWeek - 1; //We subtract 1 given that as we need sundays to have the value 6.
 }
+
+
 
 
 void toBeginLines(subADT sub){
@@ -298,26 +280,27 @@ int nextLine(subADT sub, char * line);
 // and changes the iterator to the next line in alphabetic order
 void nextTopbyLine(subADT sub, char * res[3]);
 
+
 static void addListAmountPassen(subADT sub){
-    for (int i=0; i<sub->dimLines; i++){
-        if(sub->lines->dimStation!=0){
+    for (size_t i=0; i < sub->dimLines; i++){
+        if(sub->dimStation != 0){
             //chequear como hacer la conversion de la i q es la posicion del vector a la letra que es
             //Me parece que si haces sub->line[i] te va a dar la letra de la linea.
-            sub->list1=addListAmountPassenRec(sub->list1, sub->lines[i].passenTot,POS(i)); 
+            sub->list1=addListAmountPassenRec(sub->list1, sub->lines[i].passenTot, (char)i + DIFF); 
         }
     }
 }
 
 
-static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char * line){
+static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
     errno=OK;
     int c;
     if(list==NULL || list->numTot<numPassen){
         c = list->numTot-numPassen;
-        if(list == NULL || c!=0 || (c == 0 && (*line<list->name))){ //Me parece que esta rara la ultima condicion.
+        if(list == NULL || c!=0 || (c == 0 && (line < list->name[0]))){ //Me parece que esta rara la ultima condicion.
               Tlist aux = malloc(sizeof(struct node));
             if(errno == ENOMEM){
-                errno= MEMERR;
+                errno = MEMERR;
                 return list; 
             }
             aux->name=malloc(sizeof(char));
@@ -332,15 +315,20 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char * line){
          list->tail = addListAmountPassenRec(list->tail, numPassen, line);
          return list;
 }
-    
+
+
+
 static void StationLineTop (subADT sub){
-    for (size_t i = 0; i < sub->dimLines; i++){ //We move to each line.
-        for(size_t j = 0; j < sub->lines[i].dimStation; j++){ //We move inside each line to every station.
+        for(size_t j = 0; j < sub->dimStation; j++){ //We move inside each line to every station.
             char * TopFlag = 0; //This flag helps not create all the list given that if a statiuon doesn't enter top 3  it quits the comparison.
-            sub->lines[i].top = StationLineTopRec(sub->lines[i].top, sub->lines[i].passenTot, sub->lines[i].station[j].name, TopFlag);
+            char line = sub->station[j].line;
+            sub->lines[POS(line)].passenTot += sub->station[j].passenStation;
+            sub->lines[POS(line)].top = StationLineTopRec(sub->lines[POS(line)].top, sub->lines[POS(line)].passenTot, sub->station[j].name, TopFlag);
         }
-    }
 }
+
+
+
 static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char  * TopFlag){
     if (top == NULL || NumPassen > top->numTot){
         Tlist aux = malloc(sizeof(struct node));
@@ -384,21 +372,22 @@ void toBeginTopPeriod(subADT sub){
 static size_t TopPeriodStation (subADT sub, int weekday, int period){
     size_t TopID;
     size_t TopStationPassen = 0;
-    for (size_t i = 0; i < sub->dimLines; i++){ //Recorro las lineas
-        for (size_t j = 0;  j < sub->lines[i].dimStation; j++){ //Recorro las estaciones dentro de las lineas
-            if (TopStationPassen <= sub->lines[i].station[j].days[period][weekday]){
-                if ((TopStationPassen == sub->lines[i].station[j].days[period][weekday] && (strcasecmp(sub->lines[POS(sub->line[TopID])].station[TopID].name,sub->lines[i].station[j].name)) > 0) ||  TopStationPassen != sub->lines[i].station[j].days[period][weekday]){ //Un quilombo el strcasecmp puede estar mal revisar.
-                    TopStationPassen = TopStationPassen == sub->lines[i].station[j].days[period][weekday];
+        for (size_t j = 0;  j < sub->dimStation; j++){ //Recorro las estaciones dentro de las lineas
+            if (TopStationPassen <= sub->station[j].days[period][weekday]){
+                if ((TopStationPassen == sub->station[j].days[period][weekday] && (strcasecmp(sub->station[TopID].name,sub->station[j].name)) > 0) ||  TopStationPassen != sub->station[j].days[period][weekday]){ //Un quilombo el strcasecmp puede estar mal revisar.
+                    TopStationPassen = sub->station[j].days[period][weekday];
                     TopID = j;
                 }
             }
         }
-    }
     if (TopStationPassen == 0){
         return NOID;
     }
     return TopID;
 }
+
+
+
 
 char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
     if ( (period < 0 || period > CANTPERIODS) || (weekday > CANTWEEKDAYS || weekday < 0)){
@@ -410,9 +399,10 @@ char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
         (*line) = NULL;
         return NOTOPSTATION;
     }
-    (*line) = sub->line[id];
-    return sub->lines[POS((*line))].station[id].name;
+    (*line) = sub->station[id].line;
+    return sub->station[id].name;
 }
+
 
 
 static void TopStationMonth(subADT sub){
