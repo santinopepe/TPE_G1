@@ -36,9 +36,10 @@ and changes the iterator to the next line in order to start with the line with
 the most assengers and finish with the one with least
 */
 int nextLine(subADT sub, char * line); 
+
 // uses the matrix res to return the top 3 stations with most passengers from one line
 // and changes the iterator to the next line in alphabetic order
-void nextTopbyLine(subADT sub, char * res[3]);
+char * nextTopbyLine(subADT sub, char * res[3]);
 
 //Prepares data to get the top stations of a given period and day of week.
 void toBeginTopPeriod(subADT sub);
@@ -46,7 +47,7 @@ void toBeginTopPeriod(subADT sub);
 
 //This function receives an ADT, a period, a weekday and a pointer to a char so it gives the name of the line.
 //It returns the name of the top station requested.
-char * getTopStationPeriod (subADT sub, int period, int weekday, char * line)
+char * getTopStationPeriod (subADT sub, int period, int weekday, char * line);
 
 
 //This function prepares the data to get the year and month of best average of each station.
@@ -59,10 +60,10 @@ int hasNextAvgTop(subADT sub);
 
 //This function gives the data needed, user must pass a char pointer to get name of the station, the line and the month
 //on the other hand it must pass a size_t pointer to get the year.
-//Function return the average of the best month.
+//Function return the average of the best month. 
 float NextAvgTop(subADT sub, char * station, char * line, size_t * year, char * month);
 
-
+void freeSub(subADT sub);
 
 void freeSub(subADT sub);
 

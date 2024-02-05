@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 #include "subwayADT.h"
-
+#include "htmlTable.h"
 
 #define MAX_CHARS 50
 #define DELIM ";"
 #define CHANGE_LINE "\n"
 #define DATE_DELIM "/"
 #define HOUR_DELIM ":"
+#define CANTPERIODS 4 
+#define CANTWEEKDAYS 7
 
 subADT readStations(FILE * stations, subADT sub);
 void readTurnstiles(subADT sub, FILE * turnstiles);
@@ -16,6 +18,7 @@ char * copyName(char * name, char * aux);
 void query1(subADT sub);
 void query2(subADT sub);
 void query3(subADT sub);
+void query4(subADT sub);
 
 
 int main(int numArg, char * argv[]){
@@ -63,6 +66,7 @@ int main(int numArg, char * argv[]){
     query1(sub);
     query2(sub);
     query3(sub);
+    query4(sub);
 
     free(sub);
 }
@@ -149,4 +153,119 @@ char * copyName(char * name, char * aux){
     strcpy(name, tok);
 
     return name;
+}
+
+
+void query1(subADT sub){
+    FILE * query1Arch = fopen("query1.csv", "wt");
+    htmlTable table1 = newTable("query1.html", 2, "Línea", "Pasajeros");
+
+    if(query1Arch == NULL || table1 == NULL){
+        fprintf(stderr, "Error, could not open files");
+        exit(OPENERR);
+    }
+
+    fputs("Línea;Pasajeros", query1Arch);
+
+    toBeginLines(sub);
+    
+    while(hasNextLine(sub)){
+        char * line;
+        size_t totalLinePassen = nextLine(sub, line);
+
+        fprintf(query1Arch, "%s;%ld\n", line, totalLinePassen);
+        addHTMLRow(table1, line, totalLinePassen); //NO ME ACUERDO SI ERA CON STRINGS
+
+        nextLine(sub, line);
+    }
+
+    fclose(query1Arch);
+    closeHTMLTable(table1);
+}
+
+void query2(subADT sub){
+    FILE * query2Arch = fopen("query2.csv", "wt");
+    htmlTable table2 = newTable("query2.html", 4, "Línea", "Top1Pasajeros", "Top2Pasajeros", "Top3Pasajeros");
+
+    if(query2Arch == NULL || table2 == NULL){
+        fprintf(stderr, "Error, could not open files");
+        exit(OPENERR);
+    }
+
+    fputs("Línea;Top1Pasajeros;Top2Pasajeros;Top3Pasajeros", query2Arch);
+
+    toBeginTopbyLine(sub);
+    
+    while(hasNextTopbyLine(sub)){
+        char * stations[3];
+        char * line = nextTopbyLine(sub, stations);
+
+        fprintf(query2Arch, "%s;%s;%s;%s\n", line, stations[0], stations[1], stations[2]);
+        addHTMLRow(table2, line, stations[0], stations[1], stations[2]); //NO ME ACUERDO SI ERA CON STRINGS
+
+        nextLine(sub, line);
+    }
+
+    fclose(query2Arch);
+    closeHTMLTable(table2);
+}
+
+
+void query3(subADT sub){
+    FILE * query3Arch = fopen("query3.csv", "wt");
+    //htmlTable table3 = newTable("query3.html", 5, "Día", "TopMañana", "TopMediodía", "TopTarde", "TopNoche");
+
+    if(query3Arch == NULL /*|| table3 == NULL*/){
+        fprintf(stderr, "Error, could not open files");
+        exit(OPENERR);
+    }
+
+    fputs("Día;TopMañana;TopMediodía;TopTarde;TopNoche", query3Arch);
+
+    toBeginTopPeriod(sub);
+    
+    char * days = {"LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"};
+    char * stations[CANTPERIODS];
+    char * lines[CANTPERIODS];
+    
+    for(int i=0; i<CANTWEEKDAYS; i++){
+        for(int j=0; j<CANTPERIODS; j++){
+            stations[j] = getTopStationPeriod(sub, j, i, lines[j]);
+        }
+        fprintf(query3Arch, "%s;%s (%s);%s (%s);%s (%s);%s (%s)\n", days[i], stations[0], lines[0], stations[1], lines[1], stations[2], lines[2], stations[3], lines[3]);
+        //addHTMLRow(table3, days[i], stations[0], lines[0], stations[1], lines[1], stations[2], lines[2], stations[3], lines[3]); 
+    }
+    
+
+    fclose(query3Arch);
+    //closeHTMLTable(table3);
+}
+
+void query4(subADT sub){
+        FILE * query4Arch = fopen("query4.csv", "wt");
+    //htmlTable table4 = newTable("query4.html", 4, "Estación", "TopPromedio", "Año", "Mes");
+
+    if(query4Arch == NULL /*|| table4 == NULL*/){
+        fprintf(stderr, "Error, could not open files");
+        exit(OPENERR);
+    }
+
+    fputs("Estación;TopPromedio;Año;Mes", query4Arch);
+
+    toBeginAvgTop(sub);
+    
+    char * station;
+    char * line;
+    size_t * year; 
+    char * month;
+
+    while(hasNextAvgTop(sub)){
+        float avg = NextAvgTop(sub, station, line, year, month);
+        fprintf(query4Arch, "%s (%s);%ld;%ld;%d\n", station, line, avg, year, month);
+        //addHTMLRow(table4, station, line, avg, year, month); 
+    }
+    
+
+    fclose(query4Arch);
+    //closeHTMLTable(table4);
 }
