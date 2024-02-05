@@ -16,6 +16,7 @@
 #define CANTWEEKDAYS 7
 #define NOID -1
 #define NOTOPSTATION "S/D"
+#define ERROR -1
 
 
 typedef enum{MORNING=0, LUNCH, NOON, NIGHT}HOURS;
@@ -71,7 +72,7 @@ typedef struct subCDT{
     size_t days[CANTPERIODS][CANTWEEKDAYS]; //QUERY 3
 
     avgTop * list4; //QUERY 4
-    avgTop * it4 //Cambiar nombre.
+    avgTop * it4; //Cambiar nombre.
 
 
     size_t yearEnd;
@@ -81,7 +82,6 @@ typedef struct subCDT{
 
 
 //Prototipos:
-
 
 // This function gives a number from 0 to 3 indicating what period the journey was made.
 // It returns a number from 0 to 3, this correlates with a given period.
@@ -97,19 +97,24 @@ static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear);
 
 //recursive function to add a node to a list of lines that goes 
 //from the one with most passengers to the one with the least passengers
-static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char * line);
+static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line);
+
+
 
 //function that iterates in a vector with all the information from all the lines to create
 // a list that goes from the line with the most passengers to the one with the least
 static void addListAmountPassen(subADT sub);
 
 
-//This function creates the list that contains the top 3 stations of each line.
+//This function creates a vector with the lines with a list that contains the top 3 stations and the total of passengers of each line.
 static void StationLineTop (subADT sub);
 
 //This is a recursive function that helps the creation of the top 3.
 //It returns the top 3 stations of each line.
 static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char  * TopFlag);
+
+//function that puts all the elements in the list that are the names of the top3 stations in a line in the vector res
+static void returnTopbyLine(Tlist list, char ** res);
 
 
 //Q3:
@@ -126,6 +131,8 @@ static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg
 static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, float monthAvg, char line, char * name);
 
 static void freeList(Tlist list);
+
+
 
 subADT newSub(size_t startYear, size_t endYear){
     subADT aux = calloc(1,sizeof(subCDT));
@@ -149,7 +156,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
 
     char lineUp=toupper(line);
     sub->station[stationID].line=lineUp;
-    sub->station[stationID].name = malloc(strlen(name));
+    sub->station[stationID].name = malloc(strlen(name)+1);
 
     if(errno==ENOMEM || sub->station[stationID].name == NULL){
         errno = MEMERR;
@@ -172,7 +179,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
 
     size_t largestYear = sub->station[stationID].maxYear; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
-    //POSIBLE PROBLEMA cuando probamos nos fijamos.
+    //POSIBLE PROBLEMA cuando probamos nos fijamos
     if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->station[stationID].maxYear == 0){
         //Aca creamos la matriz cunado nos pasan los dos parametros.
         sub->station[stationID].historyMonth = calloc(sub->yearEnd, sizeof(Tmonth *) ); //CHEQUEAR ESTO (le ponemos historyMonth[12] se soluciona)
@@ -253,13 +260,15 @@ static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear){
 
 
 void toBeginLines(subADT sub){
-    //armar lista en orden de cantidad de pasajeros
+    StationLineTop(sub);
+    //to make a list with the lines in order of how many passengers they have when the user/frontend  asks for it
+    addListAmountPassen(sub);
     sub->it1=sub->list1;
 }
 
+//RARO HACER UN ITERADOR QUE SEA EL INDICE PERO SINO NO C COMO MANEJAR ESTO
 void toBeginTopbyLine(subADT sub){
-    //Armar lista con orden alfabetico.
-
+    sub->it2=0;
 }
 
 //returns if there is another line next
@@ -274,20 +283,16 @@ int hasNextLine(subADT sub){
 }
 
 int hasNextTopbyLine(subADT sub){
-
+return (sub->it2 <= sub->dimLines); 
 }
 
-/*
-returns the number of passengers in the line and uses the parameter line to return the line letter
-to which the amount of passengers belong
-and changes the iterator to the next line in order to start with the line with
-the most assengers and finish with the one with least
-*/
 
-int nextLine(subADT sub, char * line); 
-// uses the matrix res to return the top 3 stations with most passengers from one line
-// and changes the iterator to the next line in alphabetic order
-void nextTopbyLine(subADT sub, char * res[3]);
+int nextLine(subADT sub, char * line){
+    *line=sub->it1->name;
+    int res=sub->it1->numTot;
+    sub->it1=sub->it1->tail;
+    return res;
+}
 
 
 static void addListAmountPassen(subADT sub){
@@ -418,7 +423,7 @@ static void TopStationMonth(subADT sub){
         size_t yearEnd;
         for(size_t j=0; j < sub->dimStation; j++){
             char * topMonth = 0;
-            float * monthAvg = 0;
+            float monthAvg = 0;
             if (sub->yearEnd == 0){
                 yearEnd = sub->station[j].maxYear;
             } else{
@@ -426,7 +431,7 @@ static void TopStationMonth(subADT sub){
             }
             size_t topYear = bestStationMonth(sub->station[j], topMonth, monthAvg, sub->yearStart, yearEnd);
 
-            sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, &monthAvg, sub->station[j].line, sub->station[j].name);
+            sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, monthAvg, sub->station[j].line, sub->station[j].name);
         }
 
 }
@@ -523,8 +528,30 @@ static void freeList(Tlist list){
         return;
     }
     freeList(list->tail);
-    free(list)
+    free(list);
 
+}
+
+char nextTopbyLine(subADT sub, char * res[3]){
+    errno=OK;
+    if(sub==NULL){
+        errno=PARAMERR;
+        return ERROR;
+    }
+    int it=sub->it2;
+    returnTopbyLine(sub->lines[it].top, res);
+    sub->it2++;
+    char line = ((char) it)+DIFF; 
+    return line;
+}
+
+//REVISAR
+static void returnTopbyLine(Tlist list, char ** res){
+    if(list==NULL){
+        return;
+    }
+    res[0]= list->name;
+    returnTopbyLine(list->tail, res+1);
 }
 
 /* COSAS Q faltan:

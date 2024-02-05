@@ -25,8 +25,9 @@ void toBeginLines(subADT sub); //CONVIENE HACERLO CON RETURN INT PARA CHEQUEAR Q
 //alphabetic order and with the 3 stations with most passengers from each line 
 void toBeginTopbyLine(subADT sub);
 
-//returns if there is another line next
+//returns if there is another line next in alphabethic order
 int hasNextLine(subADT sub);
+//returns if there is another line next with less passengers than the one before
 int hasNextTopbyLine(subADT sub);
 
 /*
@@ -37,9 +38,10 @@ the most assengers and finish with the one with least
 */
 int nextLine(subADT sub, char * line); 
 
-// uses the matrix res to return the top 3 stations with most passengers from one line
-// and changes the iterator to the next line in alphabetic order
-char * nextTopbyLine(subADT sub, char * res[3]);
+// uses the matrix res to return the top 3 stations with most passengers from one line, returns an int that is 
+//the letter of the line and changes the iterator to the next line in alphabetic order
+char nextTopbyLine(subADT sub, char * res[3]);
+
 
 //Prepares data to get the top stations of a given period and day of week.
 void toBeginTopPeriod(subADT sub);
