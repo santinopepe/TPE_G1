@@ -125,6 +125,7 @@ static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg
 
 static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, float monthAvg, char line, char * name);
 
+static void freeList(Tlist list);
 
 subADT newSub(size_t startYear, size_t endYear){
     subADT aux = calloc(1,sizeof(subCDT));
@@ -503,7 +504,28 @@ float NextAvgTop(subADT sub, char * station, char * line, size_t * year, char * 
 
 }
 
+void freeSub(subADT sub){
+    for (int i = 0; i < sub->dimStation; i++){
+        free(sub->station[i].name); //Here we free the names of the stations.
+        for(int j = sub->yearStart; j < sub->yearEnd; j++){
+            free(sub->station[i].historyMonth[j]);
+        }
+        free(sub->station[i]);
+    }
+    freeList(sub->list1);
+    freeList(sub->list4);
+    free(sub);
 
+}
+
+static void freeList(Tlist list){
+    if (list == NULL){
+        return;
+    }
+    freeList(list->tail);
+    free(list)
+
+}
 
 /* COSAS Q faltan:
  * Q1: en el toBegin del Q1 hay q llamar al StationLineTop, pq carga la cantindad de pasajeros por linea y llamar addListAmountPassen.

@@ -59,7 +59,7 @@ int hasNextAvgTop(subADT sub);
 
 //This function gives the data needed, user must pass a char pointer to get name of the station, the line and the month
 //on the other hand it must pass a size_t pointer to get the year.
-//Function return the average of the best month. 
+//Function return the average of the best month.
 float NextAvgTop(subADT sub, char * station, char * line, size_t * year, char * month);
 
 
