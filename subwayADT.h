@@ -48,6 +48,22 @@ void toBeginTopPeriod(subADT sub);
 //It returns the name of the top station requested.
 char * getTopStationPeriod (subADT sub, int period, int weekday, char * line)
 
+
+//This function prepares the data to get the year and month of best average of each station.
+void toBeginAvgTop(subADT sub);
+
+//This function checks if there is a next line
+//It returns 1 if there is, 0 if there isn't.
+int hasNextAvgTop(subADT sub);
+
+
+//This function gives the data needed, user must pass a char pointer to get name of the station, the line and the month
+//on the other hand it must pass a size_t pointer to get the year.
+//Function return the average of the best month. 
+float NextAvgTop(subADT sub, char * station, char * line, size_t * year, char * month);
+
+
+
 void freeSub(subADT sub);
 
 //ENUM ERRORES:

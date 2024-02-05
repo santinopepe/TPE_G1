@@ -71,6 +71,8 @@ typedef struct subCDT{
     size_t days[CANTPERIODS][CANTWEEKDAYS]; //QUERY 3
 
     avgTop * list4; //QUERY 4
+    avgTop * it4 //Cambiar nombre.
+
 
     size_t yearEnd;
     size_t yearStart;
@@ -466,11 +468,48 @@ static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, fl
     return list;
 }
 
+void toBeginAvgTop(subADT sub){
+    if (sub == NULL){
+        errno = PARAMERR;
+        return;
+    }
+    TopStationMonth(sub);
+    sub->it4 = sub->list4;
+}
+
+int hasNextAvgTop(subADT sub){
+    if (sub == NULL){
+        errno = PARAMERR;
+        return;
+    }
+    return sub->it4 != NULL && sub->it4->tail != NULL;
+}
+
+float NextAvgTop(subADT sub, char * station, char * line, size_t * year, char * month){
+    if (sub == NULL){
+        errno = PARAMERR;
+        return -1; //Habria que cambiar esto.
+    }
+    float avg;
+    (*station) = sub->it4->name;
+    (*line) = sub->it4->line;
+    (*year) = sub->it4->year;
+    (*month) = sub->it4->month;
+    avg = sub->it4->avg;
+    if (hasNextAvgTop(sub)){
+        sub->it4 =sub->it4->tail;
+    }
+    return avg;
+
+}
+
+
 
 /* COSAS Q faltan:
  * Q1: en el toBegin del Q1 hay q llamar al StationLineTop, pq carga la cantindad de pasajeros por linea y llamar addListAmountPassen.
  * Q2: Falta terminar funciones de front.
  * Q4: Funciones de front, toBegin y los iteradores y next.
+ *
  * FrontEnd:
  * Hacer las funciones de los Queries.
  *
