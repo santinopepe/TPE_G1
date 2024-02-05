@@ -118,6 +118,12 @@ static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName,
 static size_t TopPeriodStation (subADT sub, int weekday, int period);
 
 
+static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start, size_t end);
+
+
+static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, float monthAvg, char line, char * name);
+
+
 subADT newSub(size_t startYear, size_t endYear){
     subADT aux = calloc(1,sizeof(subCDT));
     aux->yearStart =  startYear;
@@ -406,20 +412,25 @@ char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
 
 
 static void TopStationMonth(subADT sub){
-    for(size_t i=0; i < sub->dimLines; i++){
-        for(size_t j=0; j < sub->lines[i].dimStation; j++){
+        size_t yearEnd;
+        for(size_t j=0; j < sub->dimStation; j++){
             char * topMonth = 0;
             float * monthAvg = 0;
-            size_t topYear = bestStationMonth(sub->lines[i].station[j], topMonth, monthAvg, sub->yearStart, sub->yearEnd);
+            if (sub->yearEnd == 0){
+                yearEnd = sub->station[j].maxYear;
+            } else{
+                yearEnd = sub->yearEnd;
+            }
+            size_t topYear = bestStationMonth(sub->station[j], topMonth, monthAvg, sub->yearStart, yearEnd);
 
-            sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, &monthAvg, sub->line[j], sub->lines[i].station[j].name);
+            sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, &monthAvg, sub->station[j].line, sub->station[j].name);
         }
-    }
+
 }
 
 static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start, size_t end){
     size_t maxYear=0;
-    for(size_t i=start; i < end; i++){
+    for(size_t i=start; i < end; i++){ //Aca si end es
         for(int j=0; j < TOTALMONTH; j++){
             float tempAvg = station.historyMonth[i][j].totalMonth / station.historyMonth[i][j].numDay; //SI NO FUNCIONA Q4 DAR VUELTA I Y J
             if(monthAvg  <= tempAvg){
@@ -439,7 +450,7 @@ static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, fl
         if((monthAvg == list->avg && strcasecmp(list->name, name) > 0) || monthAvg >= list->avg || list == NULL){
             avgTop * aux = malloc(sizeof(struct avgTop));
             if(aux == NULL){
-                errno == MEMERR;
+                errno = MEMERR;
                 return list;
             }
             aux->avg = monthAvg;
@@ -451,7 +462,16 @@ static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, fl
             return aux;
         }
     }
-
     list->tail = createAvgTopRec(list->tail, topMonth, topYear, monthAvg, line, name);
     return list;
 }
+
+
+/* COSAS Q faltan:
+ * Q1: en el toBegin del Q1 hay q llamar al StationLineTop, pq carga la cantindad de pasajeros por linea y llamar addListAmountPassen.
+ * Q2: Falta terminar funciones de front.
+ * Q4: Funciones de front, toBegin y los iteradores y next.
+ * FrontEnd:
+ * Hacer las funciones de los Queries.
+ *
+ */
