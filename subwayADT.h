@@ -3,19 +3,20 @@
 
 typedef struct subCDT * subADT;
 
+#define TOP 3
+
+// In case there are no extra parameters that represent the starting and/or ending year to compare the month
+// with the highest average of each station please enter a 0 (zero) in the corresponding argument
 subADT newSub(size_t startYear, size_t endYear);
 
-// For the correct use of de TAD, you need to first use the function addStations, to add the name, id and line of each station , this will then enable you
-// to use the function addDataTrips.
+// For the correct use of de TAD, you need to first use the function addStations, to add the name, id and line of each station ,
+// this will then enable you to use the function addDataTrips.
 
-//PODRIAMOS AGREGAR ARG DE STARTING Y ENDING YEAR Y ACLARAR QUE EN EL FRONT ES NECESAROP
-// MANDAR UN 0 EN AMBOS PARAMETROS SI NO NOS PASARON NADA COMO ARGUMENTO, 
-//asi nos ahorramos hacer la matriz de history tan grande ya desde el principio
+//This function adds the information of each station
 void addStations(subADT sub, char line, char * name, size_t stationID);
 
+
 // This function adds the data from each trip.
-
-
 void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t cantPassen, char start, char end);
 
 //sets an iterator to start looking at the lines from the one with most passengers to the one with the least
@@ -25,22 +26,24 @@ void toBeginLines(subADT sub); //CONVIENE HACERLO CON RETURN INT PARA CHEQUEAR Q
 //alphabetic order and with the 3 stations with most passengers from each line 
 void toBeginTopbyLine(subADT sub);
 
-//returns if there is another line next in alphabethic order
-int hasNextLine(subADT sub);
 //returns if there is another line next with less passengers than the one before
+int hasNextLine(subADT sub);
+
+//returns if there is another line next in alphabethic order
 int hasNextTopbyLine(subADT sub);
 
 /*
 returns the number of passengers in the line and uses the parameter line to return the line letter
 to which the amount of passengers belong
 and changes the iterator to the next line in order to start with the line with
-the most assengers and finish with the one with least
+the most passengers and finish with the one with least
 */
 int nextLine(subADT sub, char * line); 
 
-// uses the matrix res to return the top 3 stations with most passengers from one line, returns an int that is 
-//the letter of the line and changes the iterator to the next line in alphabetic order
-char nextTopbyLine(subADT sub, char * res[3]);
+// uses the matrix res to return the top 3 stations with most passengers from one line. 
+//If there is an empty space in the matrix is because the line has less than 3 stations, 
+//returns the letter of the line and changes the iterator to the next line in alphabetic order
+char nextTopbyLine(subADT sub, char * res[TOP]);
 
 
 //Prepares data to get the top stations of a given period and day of week.

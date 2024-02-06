@@ -8,7 +8,7 @@
 
 
 #define DIFF ('A')
-#define POS(n) ((n) - DIFF) //This macro gives us the number of the line.
+#define POS(n) ((n) - DIFF) //This macro gives us the position in the vector according to the line.
 #define PERIODSINTER 2 //This gives us the boundaries of the periods.
 #define CANTPERIODS 4 //This gives us the number of periods.
 #define LEAPYEAR 1
@@ -17,6 +17,7 @@
 #define NOID -1
 #define NOTOPSTATION "S/D"
 #define ERROR -1
+
 
 
 typedef enum{MORNING=0, LUNCH, NOON, NIGHT}HOURS;
@@ -53,16 +54,16 @@ typedef struct Tstation{
 }Tstation;
 
 typedef struct Tline{
-    size_t passenTot; //pasajeros por linea
-    Tlist top; //QUERY 2
+    size_t passenTot; //Total passengers per line
+    Tlist top; //Top 3 stations with most passengers per line
 }Tline;
 
 
 typedef struct subCDT{
-    Tstation * station; //vector donde cada posicion es una linea de subte y estan los results
-    size_t dimStation;
+    Tstation * station; //vector where each position corresponds to the id of a station and has its information 
+    size_t dimStation; // dimension of the vector station
 
-    Tline * lines; //para el Q1 y Q2 (se guardan los datos en el mismo struct/vector)
+    Tline * lines; //para el Q1 y Q2 (se guardan los datos en el mismo vector)
     size_t dimLines;
     size_t it2; //QUERY 2 (es el iterador para acceder a cada linea)(es el indice)
 
@@ -78,6 +79,7 @@ typedef struct subCDT{
     size_t yearEnd;
     size_t yearStart;
 }subCDT;
+
 
 
 
@@ -100,20 +102,22 @@ static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear);
 static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line);
 
 
-
-//function that iterates in a vector with all the information from all the lines to create
-// a list that goes from the line with the most passengers to the one with the least
+//function that iterates in a vector with all all the lines to create
+// a list that goes from the line with the most passengers to the one with the least 
+//in case 2 lines have the same number of passengers they go in alphabetical order
 static void addListAmountPassen(subADT sub);
 
-
-//This function creates a vector with the lines with a list that contains the top 3 stations and the total of passengers of each line.
+//This function creates a vector with the lines with a list that 
+//contains the top 3 stations and the total of passengers of each line.
 static void StationLineTop (subADT sub);
 
 //This is a recursive function that helps the creation of the top 3.
-//It returns the top 3 stations of each line.
+//It returns the top 3 stations of each line or less if there are less stations
+
 static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char  * TopFlag);
 
-//function that puts all the elements in the list that are the names of the top3 stations in a line in the vector res
+//function that puts the names of the top3 stations in a line in the vector res
+//in case the line has less than 3 stations the positions in the vector stay empty
 static void returnTopbyLine(Tlist list, char ** res);
 
 
@@ -220,6 +224,11 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
             //tambn podemos considerar el caso de febrero aparte y chequear si es leap solo cuando toca mes 2. Pense en hacer esto pero queria hablarlo con ustedes.
             char daysOfMonthLeap[] = {31,29,31,30,31,30,31,31,30,31,30,31};
             char daysOfMonthNoLeap[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+            /*podes hacer if(month==2){
+                sub->station[stationID].historyMonth[year][month].numDay = daysOfMonth[month]+isLeapYear;
+            }
+            y tenes un solo vector, si es q leapYear es 1 o 0
+            */
             if (isLeapYear){
                 sub->station[stationID].historyMonth[year][month].numDay = daysOfMonthLeap[month];
             } else{
@@ -275,7 +284,7 @@ void toBeginTopbyLine(subADT sub){
 int hasNextLine(subADT sub){
     errno = OK;
     if(sub != NULL){ //Creo q hay que hacer esto que es progrmacion defensiva q es algo q nos corrigieron
-        return sub->it1 != NULL && sub->it1->tail != NULL;
+        return sub->it1 != NULL && sub->it1->tail != NULL; 
     } else{
         errno = ARGERR; //Esto podria ser otro tipo de error, un PARAMERROR.
         return 0;
@@ -298,8 +307,6 @@ int nextLine(subADT sub, char * line){
 static void addListAmountPassen(subADT sub){
     for (size_t i=0; i < sub->dimLines; i++){
         if(sub->dimStation != 0){
-            //chequear como hacer la conversion de la i q es la posicion del vector a la letra que es
-            //Me parece que si haces sub->line[i] te va a dar la letra de la linea.
             sub->list1=addListAmountPassenRec(sub->list1, sub->lines[i].passenTot, (char)i + DIFF); 
         }
     }
@@ -310,7 +317,7 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
     errno=OK;
     int c;
     if(list==NULL || list->numTot<numPassen){
-        c = list->numTot-numPassen;
+        c = list->numTot - numPassen;
         if(list == NULL || c!=0 || (c == 0 && (line < list->name[0]))){ //Me parece que esta rara la ultima condicion.
               Tlist aux = malloc(sizeof(struct node));
             if(errno == ENOMEM){
@@ -532,13 +539,18 @@ static void freeList(Tlist list){
 
 }
 
-char nextTopbyLine(subADT sub, char * res[3]){
+//COMO CHEQUEAR QUE ME PASARON UN VECTOR QUE ESTA BIEN 
+char nextTopbyLine(subADT sub, char * res[TOP]){
     errno=OK;
     if(sub==NULL){
         errno=PARAMERR;
         return ERROR;
     }
     int it=sub->it2;
+    //To make sure the response matrix has a 0 if there are less than 3 stations in the line
+    for(int i=0; i<TOP; i++){
+        res[i]=0;
+    }
     returnTopbyLine(sub->lines[it].top, res);
     sub->it2++;
     char line = ((char) it)+DIFF; 
