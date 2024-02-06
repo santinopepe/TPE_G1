@@ -23,7 +23,7 @@
 typedef enum{MORNING=0, LUNCH, NOON, NIGHT}HOURS;
 
 typedef struct node{
-    char * name; //para el query 1 es la linea y para el query 2 el nombre
+    char * name;
     size_t numTot;
     struct node * tail;
 }Tnode;
@@ -47,10 +47,10 @@ typedef struct Tmonth{
 typedef struct Tstation{
     char * name;
     char line;
-    size_t passenStation; //para query 2 no va a ser lo mas eficiente pero hay que usar el id para la busqueda de mas 
-    size_t days[CANTPERIODS][CANTWEEKDAYS]; //matriz de dias de la semana con periodos del dia
+    size_t passenStation;
+    size_t days[CANTPERIODS][CANTWEEKDAYS];
     Tmonth * historyMonth[TOTALMONTH]; //le puse el asterisco para que busque su año y mes y ponga ahi la cantidad de gente
-    size_t maxYear;
+    size_t maxYear[TOTALMONTH];
 }Tstation;
 
 typedef struct Tline{
@@ -136,6 +136,7 @@ static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, fl
 
 static void freeList(Tlist list);
 
+static void freeListAVG(avgTop * list);
 
 
 subADT newSub(size_t startYear, size_t endYear){
@@ -181,17 +182,20 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     sub->station[stationID].days[getPeriod(start,end)][getDayOfWeek(day,month,year,isLeapYear)] += numPassen; //Here we add passengers to a given day and period.
 
 
-    size_t largestYear = sub->station[stationID].maxYear; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
+    size_t largestYear = sub->station[stationID].maxYear[month-1]; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
+
+    //REPENSAR.
+
 
     //POSIBLE PROBLEMA cuando probamos nos fijamos
-    if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->station[stationID].maxYear == 0){
+    if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->station[stationID].maxYear[month-1] == 0){
         //Aca creamos la matriz cunado nos pasan los dos parametros.
-        sub->station[stationID].historyMonth = calloc(sub->yearEnd, sizeof(Tmonth *) ); //CHEQUEAR ESTO (le ponemos historyMonth[12] se soluciona)
-        if (errno == ENOMEM || sub->station[stationID].historyMonth != NULL ){
+        sub->station[stationID].historyMonth[month-1] = calloc(sub->yearEnd-sub->yearStart, sizeof(Tmonth *) ); //CHEQUEAR ESTO (le ponemos historyMonth[12] se soluciona)
+        if (errno == ENOMEM || sub->station[stationID].historyMonth[month-1] != NULL ){
             errno = MEMERR;
             return;
         }
-        for (int i = sub->yearStart; i <=  sub->yearEnd; i++){
+        for (int i = sub->yearStart-sub->; i <=  sub->yearEnd; i++){
             sub->station[stationID].historyMonth[i] = calloc(TOTALMONTH, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
             if (errno == ENOMEM || sub->station[stationID].historyMonth[i] != NULL ){
                 errno = MEMERR;
@@ -219,20 +223,12 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
         sub->station[stationID].historyMonth[year][month].totalMonth += numPassen;
 
         if (sub->station[stationID].historyMonth[year][month].numDay == 0){
-            //Creo que se podria hacer mejor (osea un solo vector).
-            //podemos hacer una matriz osea -> char daysOfMonth[12][2]={{31,29,31,30,31,30,31,31,30,31,30,31},{31,28,31,30,31,30,31,31,30,31,30,31}}
-            //tambn podemos considerar el caso de febrero aparte y chequear si es leap solo cuando toca mes 2. Pense en hacer esto pero queria hablarlo con ustedes.
-            char daysOfMonthLeap[] = {31,29,31,30,31,30,31,31,30,31,30,31};
-            char daysOfMonthNoLeap[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-            /*podes hacer if(month==2){
+
+            char daysOfMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+            if(month==2){ // #define
                 sub->station[stationID].historyMonth[year][month].numDay = daysOfMonth[month]+isLeapYear;
-            }
-            y tenes un solo vector, si es q leapYear es 1 o 0
-            */
-            if (isLeapYear){
-                sub->station[stationID].historyMonth[year][month].numDay = daysOfMonthLeap[month];
             } else{
-                sub->station[stationID].historyMonth[year][month].numDay = daysOfMonthNoLeap[month];
+                sub->station[stationID].historyMonth[year][month].numDay = daysOfMonth[month];
             }
         }
     }
@@ -284,19 +280,29 @@ void toBeginTopbyLine(subADT sub){
 int hasNextLine(subADT sub){
     errno = OK;
     if(sub != NULL){ //Creo q hay que hacer esto que es progrmacion defensiva q es algo q nos corrigieron
-        return sub->it1 != NULL && sub->it1->tail != NULL; 
+        return sub->it1 != NULL;
     } else{
-        errno = ARGERR; //Esto podria ser otro tipo de error, un PARAMERROR.
+        errno = PARAMERR; //Esto podria ser otro tipo de error, un PARAMERROR.
         return 0;
     }
 }
 
 int hasNextTopbyLine(subADT sub){
-return (sub->it2 <= sub->dimLines); 
+    if (sub == NULL){
+        errno = PARAMERR;
+        return ERROR;
+
+    }
+    return (sub->it2 <= sub->dimLines);
 }
 
 
 int nextLine(subADT sub, char * line){
+    if (sub == NULL){
+        errno = PARAMERR;
+        return ERROR;
+
+    }
     *line=sub->it1->name;
     int res=sub->it1->numTot;
     sub->it1=sub->it1->tail;
@@ -376,8 +382,7 @@ static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName,
 
 
 
-// Esto es un kilombo y bastante feo a mi parecer PENSAR DEVUElTA
-// Podriamos hacer un vector cuando cargamos los datos y usar swaps??? Me parce mejor.
+
 void toBeginTopPeriod(subADT sub){
     if (sub == NULL){
         errno = PARAMERR;
@@ -519,13 +524,13 @@ float NextAvgTop(subADT sub, char * station, char * line, size_t * year, char * 
 void freeSub(subADT sub){
     for (int i = 0; i < sub->dimStation; i++){
         free(sub->station[i].name); //Here we free the names of the stations.
-        for(int j = sub->yearStart; j < sub->yearEnd; j++){
+        for(int j = 0; j < TOTALMONTH; j++){
             free(sub->station[i].historyMonth[j]);
         }
         free(sub->station[i]);
     }
     freeList(sub->list1);
-    freeList(sub->list4); //Aca esta mal
+    freeListAVG(sub->list4); //Aca esta mal
     free(sub);
 
 }
@@ -539,11 +544,19 @@ static void freeList(Tlist list){
 
 }
 
-//COMO CHEQUEAR QUE ME PASARON UN VECTOR QUE ESTA BIEN 
+static void freeListAVG(avgTop * list){
+    if (list == NULL){
+        return;
+    }
+    freeListAVG(list->tail);
+    free(list);
+
+}
+
 char nextTopbyLine(subADT sub, char * res[TOP]){
     errno=OK;
-    if(sub==NULL){
-        errno=PARAMERR;
+    if(sub==NULL || res == NULL){
+        errno = PARAMERR;
         return ERROR;
     }
     int it=sub->it2;
@@ -557,7 +570,7 @@ char nextTopbyLine(subADT sub, char * res[TOP]){
     return line;
 }
 
-//REVISAR
+
 static void returnTopbyLine(Tlist list, char ** res){
     if(list==NULL){
         return;
