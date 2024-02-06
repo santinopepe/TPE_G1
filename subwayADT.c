@@ -186,7 +186,35 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
 
     //REPENSAR.
 
+    
+    if(sub->yearEnd < sub->yearStart){
+        errno=PARAMERR;
+        return ERROR;
+    }
+     
+     
+    if((sub->yearEnd==0 || year <= sub->yearEnd) && (sub->station[stationID].maxYear[month-1]<year) && (year >= sub->yearStart)){
+        sub->station[stationID].maxYear[month-1]= year;
+        sub->station[stationID].historyMonth[month-1]=realloc(sub->station[stationID].historyMonth[month-1],sizeof(Tmonth)*(year-sub->yearStart));
+        if (errno == ENOMEM || sub->station[stationID].historyMonth[month-1] == NULL ){
+            errno = MEMERR;
+            return;
+        }
+            for(int i=0; i < year-sub->yearStart;i++){
+            sub->station[stationID].historyMonth[month-1][i].numDay=0;
+            sub->station[stationID].historyMonth[month-1][i].totalMonth=0;
+        }
 
+    }  
+
+    //CHEQUEAMOS 2 VECES REVISAR!!!
+    if(year >= sub->yearStart){
+        sub->station[stationID].historyMonth[month-1][year-sub->yearStart].totalMonth+=numPassen;
+    }
+    
+    
+    
+    /*
     //POSIBLE PROBLEMA cuando probamos nos fijamos
     if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->station[stationID].maxYear[month-1] == 0){
         //Aca creamos la matriz cunado nos pasan los dos parametros.
@@ -218,6 +246,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
         }
 
     }
+    */
     if (sub->yearStart <= year && (sub->yearEnd >= year || sub->yearEnd == 0)){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
 
         sub->station[stationID].historyMonth[year][month].totalMonth += numPassen;
@@ -527,6 +556,7 @@ void freeSub(subADT sub){
         for(int j = 0; j < TOTALMONTH; j++){
             free(sub->station[i].historyMonth[j]);
         }
+        free(sub->station[i].historyMonth);
         free(sub->station[i]);
     }
     freeList(sub->list1);
