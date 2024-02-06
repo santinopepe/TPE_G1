@@ -518,7 +518,7 @@ void freeSub(subADT sub){
         free(sub->station[i]);
     }
     freeList(sub->list1);
-    freeList(sub->list4);
+    freeList(sub->list4); //Aca esta mal
     free(sub);
 
 }
