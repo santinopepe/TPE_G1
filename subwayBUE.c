@@ -10,6 +10,8 @@
 #define HOUR_DELIM ":"
 #define CANTPERIODS 4 
 #define CANTWEEKDAYS 7
+#define OPENBR '('
+#define SPACE ' '
 
 subADT readStations(FILE * stations, subADT sub);
 void readTurnstiles(subADT sub, FILE * turnstiles);
@@ -198,7 +200,9 @@ void query2(subADT sub){
     
     while(hasNextTopbyLine(sub)){
         char * stations[3];
-        char * line = nextTopbyLine(sub, stations);
+        char line[1];
+        line[0] = nextTopbyLine(sub, stations);
+        line[1] = 0; 
 
         fprintf(query2Arch, "%s;%s;%s;%s\n", line, stations[0], stations[1], stations[2]);
         addHTMLRow(table2, line, stations[0], stations[1], stations[2]); //NO ME ACUERDO SI ERA CON STRINGS
@@ -213,9 +217,9 @@ void query2(subADT sub){
 
 void query3(subADT sub){
     FILE * query3Arch = fopen("query3.csv", "wt");
-    //htmlTable table3 = newTable("query3.html", 5, "Día", "TopMañana", "TopMediodía", "TopTarde", "TopNoche");
+    htmlTable table3 = newTable("query3.html", 5, "Día", "TopMañana", "TopMediodía", "TopTarde", "TopNoche");
 
-    if(query3Arch == NULL /*|| table3 == NULL*/){
+    if(query3Arch == NULL || table3 == NULL){
         fprintf(stderr, "Error, could not open files");
         exit(OPENERR);
     }
@@ -227,25 +231,28 @@ void query3(subADT sub){
     char * days = {"LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"};
     char * stations[CANTPERIODS];
     char * lines[CANTPERIODS];
+    char res[CANTPERIODS][MAX_CHARS];
     
     for(int i=0; i<CANTWEEKDAYS; i++){
         for(int j=0; j<CANTPERIODS; j++){
             stations[j] = getTopStationPeriod(sub, j, i, lines[j]);
+            joinStationLine(res[j], stations[j], lines[j]);
         }
-        fprintf(query3Arch, "%s;%s (%s);%s (%s);%s (%s);%s (%s)\n", days[i], stations[0], lines[0], stations[1], lines[1], stations[2], lines[2], stations[3], lines[3]);
-        //addHTMLRow(table3, days[i], stations[0], lines[0], stations[1], lines[1], stations[2], lines[2], stations[3], lines[3]); 
+        
+        fprintf(query3Arch, "%s;%s;%s;%s;%s\n", days[i], res[0], res[1], res[2], res[3]);
+        addHTMLRow(table3, days[i], res[0], res[1], res[2], res[3]); 
     }
     
 
     fclose(query3Arch);
-    //closeHTMLTable(table3);
+    closeHTMLTable(table3);
 }
 
 void query4(subADT sub){
-        FILE * query4Arch = fopen("query4.csv", "wt");
-    //htmlTable table4 = newTable("query4.html", 4, "Estación", "TopPromedio", "Año", "Mes");
+    FILE * query4Arch = fopen("query4.csv", "wt");
+    htmlTable table4 = newTable("query4.html", 4, "Estación", "TopPromedio", "Año", "Mes");
 
-    if(query4Arch == NULL /*|| table4 == NULL*/){
+    if(query4Arch == NULL || table4 == NULL){
         fprintf(stderr, "Error, could not open files");
         exit(OPENERR);
     }
@@ -258,14 +265,27 @@ void query4(subADT sub){
     char * line;
     size_t * year; 
     char * month;
+    char res[MAX_CHARS];
 
     while(hasNextAvgTop(sub)){
         float avg = NextAvgTop(sub, station, line, year, month);
-        fprintf(query4Arch, "%s (%s);%ld;%ld;%d\n", station, line, avg, year, month);
-        //addHTMLRow(table4, station, line, avg, year, month); 
+        joinStationLine(res, station, line);
+        fprintf(query4Arch, "%s;%ld;%ld;%d\n", res, avg, year, month);
+        addHTMLRow(table4, station, line, avg, year, month); 
     }
     
 
     fclose(query4Arch);
-    //closeHTMLTable(table4);
+    closeHTMLTable(table4);
+}
+
+
+void joinStationLine(char * res, char * station, char * line){
+    int dim = strlen(station);
+    strcpy(res, station);
+    res[dim++] = SPACE;
+    res[dim++] = OPENBR;
+    strcpy(res+dim, line);
+    res[++dim] = OPENBR+1;
+    res[++dim] = 0;
 }
