@@ -16,6 +16,7 @@
 subADT readStations(FILE * stations, subADT sub);
 void readTurnstiles(subADT sub, FILE * turnstiles);
 char * copyName(char * name, char * aux);
+void joinStationLine(char * res, char * station, char * line);
 
 void query1(subADT sub);
 void query2(subADT sub);
@@ -170,9 +171,10 @@ void query1(subADT sub){
     fputs("Línea;Pasajeros", query1Arch);
 
     toBeginLines(sub);
-    
+
+    char * line=NULL;
     while(hasNextLine(sub)){
-        char * line;
+        
         size_t totalLinePassen = nextLine(sub, line);
 
         fprintf(query1Arch, "%s;%ld\n", line, totalLinePassen);
@@ -228,7 +230,7 @@ void query3(subADT sub){
 
     toBeginTopPeriod(sub);
     
-    char * days = {"LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"};
+    char * days[CANTWEEKDAYS] = {"LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"};
     char * stations[CANTPERIODS];
     char * lines[CANTPERIODS];
     char res[CANTPERIODS][MAX_CHARS];
@@ -261,16 +263,16 @@ void query4(subADT sub){
 
     toBeginAvgTop(sub);
     
-    char * station;
-    char * line;
-    size_t * year; 
-    char * month;
+    char * station=NULL;
+    char * line=NULL;
+    size_t * year=NULL; 
+    char * month=NULL;
     char res[MAX_CHARS];
 
     while(hasNextAvgTop(sub)){
         float avg = NextAvgTop(sub, station, line, year, month);
         joinStationLine(res, station, line);
-        fprintf(query4Arch, "%s;%ld;%ld;%d\n", res, avg, year, month);
+        fprintf(query4Arch, "%s;%f;%ld;%s\n", res, avg, (*year), month);
         addHTMLRow(table4, station, line, avg, year, month); 
     }
     

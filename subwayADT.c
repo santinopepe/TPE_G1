@@ -557,8 +557,10 @@ void freeSub(subADT sub){
             free(sub->station[i].historyMonth[j]);
         }
         free(sub->station[i].historyMonth);
-        free(sub->station[i]);
+        
     }
+    free(sub->station);
+    
     freeList(sub->list1);
     freeListAVG(sub->list4); //Aca esta mal
     free(sub);
