@@ -1,6 +1,9 @@
 #ifndef TPE_G1_SUBWAYADT_H
 #define TPE_G1_SUBWAYADT_H
 
+#include <stdlin.h>
+#include <stddef.h>
+
 typedef struct subCDT * subADT;
 
 #define TOP 3

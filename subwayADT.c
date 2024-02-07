@@ -5,6 +5,8 @@
 #include <ctype.h>
 #include <string.h>
 #include <errno.h>
+#include <strings.h>
+
 
 
 #define DIFF ('A')
@@ -129,7 +131,7 @@ static void returnTopbyLine(Tlist list, char ** res);
 static size_t TopPeriodStation (subADT sub, int weekday, int period);
 
 
-static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start, size_t end);
+static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start, size_t end, size_t month);
 
 
 static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, float monthAvg, char line, char * name);
@@ -182,27 +184,25 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     sub->station[stationID].days[getPeriod(start,end)][getDayOfWeek(day,month,year,isLeapYear)] += numPassen; //Here we add passengers to a given day and period.
 
 
-    size_t largestYear = sub->station[stationID].maxYear[month-1]; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
-
-    //REPENSAR.
+    size_t largestYear = sub->station[stationID].maxYear[(int)month-1]; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
     
     if(sub->yearEnd < sub->yearStart){
         errno=PARAMERR;
-        return ERROR;
+        return;
     }
      
      
     if((sub->yearEnd==0 || year <= sub->yearEnd) && (sub->station[stationID].maxYear[month-1]<year) && (year >= sub->yearStart)){
-        sub->station[stationID].maxYear[month-1]= year;
-        sub->station[stationID].historyMonth[month-1]=realloc(sub->station[stationID].historyMonth[month-1],sizeof(Tmonth)*(year-sub->yearStart));
-        if (errno == ENOMEM || sub->station[stationID].historyMonth[month-1] == NULL ){
+        sub->station[stationID].maxYear[(int)month-1]= year;
+        sub->station[stationID].historyMonth[(int)month-1]=realloc(sub->station[stationID].historyMonth[month-1],sizeof(Tmonth)*(year-sub->yearStart));
+        if (errno == ENOMEM || sub->station[stationID].historyMonth[(int)month-1] == NULL ){
             errno = MEMERR;
             return;
         }
             for(int i=0; i < year-sub->yearStart;i++){
-            sub->station[stationID].historyMonth[month-1][i].numDay=0;
-            sub->station[stationID].historyMonth[month-1][i].totalMonth=0;
+            sub->station[stationID].historyMonth[(int)month-1][i].numDay=0;
+            sub->station[stationID].historyMonth[(int)month-1][i].totalMonth=0;
         }
 
     }  
@@ -249,15 +249,15 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     */
     if (sub->yearStart <= year && (sub->yearEnd >= year || sub->yearEnd == 0)){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
 
-        sub->station[stationID].historyMonth[year][month].totalMonth += numPassen;
+        sub->station[stationID].historyMonth[year][(int)month].totalMonth += numPassen;
 
-        if (sub->station[stationID].historyMonth[year][month].numDay == 0){
+        if (sub->station[stationID].historyMonth[year][(int)month].numDay == 0){
 
             char daysOfMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
             if(month==2){ // #define
-                sub->station[stationID].historyMonth[year][month].numDay = daysOfMonth[month]+isLeapYear;
+                sub->station[stationID].historyMonth[year][(int)month].numDay = daysOfMonth[(int)month]+isLeapYear;
             } else{
-                sub->station[stationID].historyMonth[year][month].numDay = daysOfMonth[month];
+                sub->station[stationID].historyMonth[year][(int)month].numDay = daysOfMonth[(int)month];
             }
         }
     }
@@ -265,12 +265,15 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
 
 
 static int getPeriod(char startHour, char endHour){
+    errno = OK;
   char periods [][PERIODSINTER] = {{6,11}, {11,13},{13,17},{17,6}}; //Ver que onda esto usa magic numbers.
     for (int i = 0; i < CANTPERIODS ; i++) {
         if ( (startHour >= periods[i][0]) && (endHour <= periods[i][1]) ){
             return i;
         }
     }
+    errno = PARAMERR;
+    return ERROR;
 }
 
 static char leapYearCalc(size_t year){
@@ -332,7 +335,7 @@ int nextLine(subADT sub, char * line){
         return ERROR;
 
     }
-    *line=sub->it1->name;
+    (*line) =sub->it1->name;
     int res=sub->it1->numTot;
     sub->it1=sub->it1->tail;
     return res;
@@ -342,7 +345,7 @@ int nextLine(subADT sub, char * line){
 static void addListAmountPassen(subADT sub){
     for (size_t i=0; i < sub->dimLines; i++){
         if(sub->dimStation != 0){
-            sub->list1=addListAmountPassenRec(sub->list1, sub->lines[i].passenTot, (char)i + DIFF); 
+            sub->list1=addListAmountPassenRec(sub->list1, sub->lines[i].passenTot, (char)i + DIFFF); 
         }
     }
 }
@@ -359,8 +362,9 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
                 errno = MEMERR;
                 return list; 
             }
-            aux->name=malloc(sizeof(char));
-            aux->name=strcpy(aux->name,line); //Me parece raro mejor no seria apuntar a la posicion del nombre ???
+            aux->name=malloc(sizeof(char)+1);
+            char * aux = line;
+            aux->name=strcpy(aux->name, aux); //Me parece raro mejor no seria apuntar a la posicion del nombre ???
             aux->numTot=numPassen;
             aux->tail = list;
             return aux;
@@ -446,12 +450,12 @@ static size_t TopPeriodStation (subADT sub, int weekday, int period){
 
 char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
     if ( (period < 0 || period > CANTPERIODS) || (weekday > CANTWEEKDAYS || weekday < 0)){
-        (*line) = NULL;
+        line = NULL;
         return NULL;
     }
     size_t id = sub->days[period][weekday];
     if (id == NOID){
-        (*line) = NULL;
+        line = NULL;
         return NOTOPSTATION;
     }
     (*line) = sub->station[id].line;
@@ -462,34 +466,37 @@ char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
 
 static void TopStationMonth(subADT sub){
         size_t yearEnd;
+
         for(size_t j=0; j < sub->dimStation; j++){
+            for(size_t i=0; i < TOTALMONTH; i++){
             char * topMonth = 0;
             float monthAvg = 0;
             if (sub->yearEnd == 0){
-                yearEnd = sub->station[j].maxYear;
+                yearEnd = sub->station[j].maxYear[i];
             } else{
                 yearEnd = sub->yearEnd;
             }
+            
             size_t topYear = bestStationMonth(sub->station[j], topMonth, monthAvg, sub->yearStart, yearEnd);
 
-            sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, monthAvg, sub->station[j].line, sub->station[j].name);
+            sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, monthAvg, sub->station[j].line, sub->station[j].name, i);
+            }
         }
 
 }
 
-static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start, size_t end){
+static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start, size_t end, size_t month){
     size_t maxYear=0;
-    for(size_t i=start; i < end; i++){ //Aca si end es
-        for(int j=0; j < TOTALMONTH; j++){
-            float tempAvg = station.historyMonth[i][j].totalMonth / station.historyMonth[i][j].numDay; //SI NO FUNCIONA Q4 DAR VUELTA I Y J
+    for(size_t i=start; i < end; i++){ 
+            float tempAvg = station.historyMonth[i][month].totalMonth / station.historyMonth[i][month].numDay; //SI NO FUNCIONA Q4 DAR VUELTA I Y J
             if(monthAvg  <= tempAvg){
-                if((monthAvg  == tempAvg && maxYear < i) || (maxYear == i && (*topMonth) < j) || monthAvg < tempAvg){
+                if((monthAvg  == tempAvg && maxYear < i) || (maxYear == i && (*topMonth) < month) || monthAvg < tempAvg){
                     monthAvg  = tempAvg;
                     maxYear = i;
-                    topMonth = j;
+                    topMonth = month;
                 }
             }
-        }
+        
     }
     return maxYear;
 }
@@ -527,7 +534,7 @@ void toBeginAvgTop(subADT sub){
 int hasNextAvgTop(subADT sub){
     if (sub == NULL){
         errno = PARAMERR;
-        return;
+        return ERROR;
     }
     return sub->it4 != NULL && sub->it4->tail != NULL;
 }
@@ -535,10 +542,10 @@ int hasNextAvgTop(subADT sub){
 float NextAvgTop(subADT sub, char * station, char * line, size_t * year, char * month){
     if (sub == NULL){
         errno = PARAMERR;
-        return -1; //Habria que cambiar esto.
+        return ERROR; 
     }
     float avg;
-    (*station) = sub->it4->name;
+    station = sub->it4->name;
     (*line) = sub->it4->line;
     (*year) = sub->it4->year;
     (*month) = sub->it4->month;
