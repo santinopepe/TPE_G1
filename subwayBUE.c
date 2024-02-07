@@ -25,7 +25,7 @@ void query4(subADT sub);
 
 
 int main(int numArg, char * argv[]){
-    if(numArg <= 3 && numArg >= 5){
+    if(numArg >= 3 && numArg <= 5){
         fprintf(stderr, "Error, amount of arguments not valid");
         exit(ARGERR);
     }

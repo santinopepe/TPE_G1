@@ -1,4 +1,3 @@
-
 #include "subwayADT.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,7 +61,7 @@ typedef struct Tline{
 
 
 typedef struct subCDT{
-    Tstation * station; //vector where each position corresponds to the id of a station and has its information 
+    Tstation * station; //vector where each position corresponds to the id of a station and has its information
     size_t dimStation; // dimension of the vector station
 
     Tline * lines; //para el Q1 y Q2 (se guardan los datos en el mismo vector)
@@ -99,17 +98,17 @@ static char leapYearCalc(size_t year);
 // For example, for 2/02/2024 it will give us the number 5, as that number represents friday.
 static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear);
 
-//recursive function to add a node to a list of lines that goes 
+//recursive function to add a node to a list of lines that goes
 //from the one with most passengers to the one with the least passengers
 static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line);
 
 
 //function that iterates in a vector with all all the lines to create
-// a list that goes from the line with the most passengers to the one with the least 
+// a list that goes from the line with the most passengers to the one with the least
 //in case 2 lines have the same number of passengers they go in alphabetical order
 static void addListAmountPassen(subADT sub);
 
-//This function creates a vector with the lines with a list that 
+//This function creates a vector with the lines with a list that
 //contains the top 3 stations and the total of passengers of each line.
 static void StationLineTop (subADT sub);
 
@@ -146,7 +145,7 @@ subADT newSub(size_t startYear, size_t endYear){
     aux->yearStart =  startYear;
     aux->yearEnd = endYear;
     return aux;
-    
+
 }
 
 
@@ -176,7 +175,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
 
 void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t numPassen, char start, char end){
     errno = OK;
-    
+
     sub->station[stationID].passenStation += numPassen; // Here the number of passengers of a station increases.
 
     char isLeapYear = leapYearCalc(year);  //This helps calculate the day of the week if it is a leap year.
@@ -186,13 +185,13 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
 
     size_t largestYear = sub->station[stationID].maxYear[(int)month-1]; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
-    
+
     if(sub->yearEnd < sub->yearStart){
         errno=PARAMERR;
         return;
     }
-     
-     
+
+
     if((sub->yearEnd==0 || year <= sub->yearEnd) && (sub->station[stationID].maxYear[month-1]<year) && (year >= sub->yearStart)){
         sub->station[stationID].maxYear[(int)month-1]= year;
         sub->station[stationID].historyMonth[(int)month-1]=realloc(sub->station[stationID].historyMonth[month-1],sizeof(Tmonth)*(year-sub->yearStart));
@@ -200,20 +199,20 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
             errno = MEMERR;
             return;
         }
-            for(int i=0; i < year-sub->yearStart;i++){
+        for(int i=0; i < year-sub->yearStart;i++){
             sub->station[stationID].historyMonth[(int)month-1][i].numDay=0;
             sub->station[stationID].historyMonth[(int)month-1][i].totalMonth=0;
         }
 
-    }  
+    }
 
     //CHEQUEAMOS 2 VECES REVISAR!!!
     if(year >= sub->yearStart){
         sub->station[stationID].historyMonth[month-1][year-sub->yearStart].totalMonth+=numPassen;
     }
-    
-    
-    
+
+
+
     /*
     //POSIBLE PROBLEMA cuando probamos nos fijamos
     if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->station[stationID].maxYear[month-1] == 0){
@@ -266,7 +265,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
 
 static int getPeriod(char startHour, char endHour){
     errno = OK;
-  char periods [][PERIODSINTER] = {{6,11}, {11,13},{13,17},{17,6}}; //Ver que onda esto usa magic numbers.
+    char periods [][PERIODSINTER] = {{6,11}, {11,13},{13,17},{17,6}}; //Ver que onda esto usa magic numbers.
     for (int i = 0; i < CANTPERIODS ; i++) {
         if ( (startHour >= periods[i][0]) && (endHour <= periods[i][1]) ){
             return i;
@@ -277,20 +276,20 @@ static int getPeriod(char startHour, char endHour){
 }
 
 static char leapYearCalc(size_t year){
-    if ( (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 ){ //This are the conditions to know if a given year is a leap year. 
+    if ( (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 ){ //This are the conditions to know if a given year is a leap year.
         return LEAPYEAR;
     }
     return !LEAPYEAR;
 }
 
 static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear){
-        static size_t t[] = { 0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4 };
-        year -= month < 3;
-        size_t dayOfWeek = ( (year + year / 4 - year / 100 + year / 400 + t[month - 1] + day) % 7 ) - leapYear;
-        if (day == 0){ //With formula 0 position is given to sundays, in our case sundays need to have the value of 6.
-            return 6;
-        }
-        return dayOfWeek - 1; //We subtract 1 given that as we need sundays to have the value 6.
+    static size_t t[] = { 0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4 };
+    year -= month < 3;
+    size_t dayOfWeek = ( (year + year / 4 - year / 100 + year / 400 + t[month - 1] + day) % 7 ) - leapYear;
+    if (day == 0){ //With formula 0 position is given to sundays, in our case sundays need to have the value of 6.
+        return 6;
+    }
+    return dayOfWeek - 1; //We subtract 1 given that as we need sundays to have the value 6.
 }
 
 
@@ -345,7 +344,7 @@ int nextLine(subADT sub, char * line){
 static void addListAmountPassen(subADT sub){
     for (size_t i=0; i < sub->dimLines; i++){
         if(sub->dimStation != 0){
-            sub->list1=addListAmountPassenRec(sub->list1, sub->lines[i].passenTot, (char)i + DIFFF); 
+            sub->list1=addListAmountPassenRec(sub->list1, sub->lines[i].passenTot, (char)i + DIFF);
         }
     }
 }
@@ -357,14 +356,14 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
     if(list==NULL || list->numTot<numPassen){
         c = list->numTot - numPassen;
         if(list == NULL || c!=0 || (c == 0 && (line < list->name[0]))){ //Me parece que esta rara la ultima condicion.
-              Tlist aux = malloc(sizeof(struct node));
+            Tlist aux = malloc(sizeof(struct node));
             if(errno == ENOMEM){
                 errno = MEMERR;
-                return list; 
+                return list;
             }
             aux->name=malloc(sizeof(char)+1);
-            char * aux = line;
-            aux->name=strcpy(aux->name, aux); //Me parece raro mejor no seria apuntar a la posicion del nombre ???
+            aux->name[0]= line; //Me parece raro mejor no seria apuntar a la posicion del nombre ???
+            aux->name[1] = 0; //MAGICNUM
             aux->numTot=numPassen;
             aux->tail = list;
             return aux;
@@ -372,19 +371,19 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
     }
 
     //si no cumple con las condiciones pasa al siguinte
-         list->tail = addListAmountPassenRec(list->tail, numPassen, line);
-         return list;
+    list->tail = addListAmountPassenRec(list->tail, numPassen, line);
+    return list;
 }
 
 
 
 static void StationLineTop (subADT sub){
-        for(size_t j = 0; j < sub->dimStation; j++){ //We move inside each line to every station.
-            char * TopFlag = 0; //This flag helps not create all the list given that if a statiuon doesn't enter top 3  it quits the comparison.
-            char line = sub->station[j].line;
-            sub->lines[POS(line)].passenTot += sub->station[j].passenStation;
-            sub->lines[POS(line)].top = StationLineTopRec(sub->lines[POS(line)].top, sub->lines[POS(line)].passenTot, sub->station[j].name, TopFlag);
-        }
+    for(size_t j = 0; j < sub->dimStation; j++){ //We move inside each line to every station.
+        char * TopFlag = 0; //This flag helps not create all the list given that if a statiuon doesn't enter top 3  it quits the comparison.
+        char line = sub->station[j].line;
+        sub->lines[POS(line)].passenTot += sub->station[j].passenStation;
+        sub->lines[POS(line)].top = StationLineTopRec(sub->lines[POS(line)].top, sub->lines[POS(line)].passenTot, sub->station[j].name, TopFlag);
+    }
 }
 
 
@@ -431,14 +430,14 @@ void toBeginTopPeriod(subADT sub){
 static size_t TopPeriodStation (subADT sub, int weekday, int period){
     size_t TopID;
     size_t TopStationPassen = 0;
-        for (size_t j = 0;  j < sub->dimStation; j++){ //Recorro las estaciones dentro de las lineas
-            if (TopStationPassen <= sub->station[j].days[period][weekday]){
-                if ((TopStationPassen == sub->station[j].days[period][weekday] && (strcasecmp(sub->station[TopID].name,sub->station[j].name)) > 0) ||  TopStationPassen != sub->station[j].days[period][weekday]){ //Un quilombo el strcasecmp puede estar mal revisar.
-                    TopStationPassen = sub->station[j].days[period][weekday];
-                    TopID = j;
-                }
+    for (size_t j = 0;  j < sub->dimStation; j++){ //Recorro las estaciones dentro de las lineas
+        if (TopStationPassen <= sub->station[j].days[period][weekday]){
+            if ((TopStationPassen == sub->station[j].days[period][weekday] && (strcasecmp(sub->station[TopID].name,sub->station[j].name)) > 0) ||  TopStationPassen != sub->station[j].days[period][weekday]){ //Un quilombo el strcasecmp puede estar mal revisar.
+                TopStationPassen = sub->station[j].days[period][weekday];
+                TopID = j;
             }
         }
+    }
     if (TopStationPassen == 0){
         return NOID;
     }
@@ -465,10 +464,10 @@ char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
 
 
 static void TopStationMonth(subADT sub){
-        size_t yearEnd;
+    size_t yearEnd;
 
-        for(size_t j=0; j < sub->dimStation; j++){
-            for(size_t i=0; i < TOTALMONTH; i++){
+    for(size_t j=0; j < sub->dimStation; j++){
+        for(size_t i=0; i < TOTALMONTH; i++){
             char * topMonth = 0;
             float monthAvg = 0;
             if (sub->yearEnd == 0){
@@ -476,27 +475,27 @@ static void TopStationMonth(subADT sub){
             } else{
                 yearEnd = sub->yearEnd;
             }
-            
-            size_t topYear = bestStationMonth(sub->station[j], topMonth, monthAvg, sub->yearStart, yearEnd);
 
-            sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, monthAvg, sub->station[j].line, sub->station[j].name, i);
-            }
+            size_t topYear = bestStationMonth(sub->station[j], topMonth, monthAvg, sub->yearStart, yearEnd, i);
+
+            sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, monthAvg, sub->station[j].line, sub->station[j].name);
         }
+    }
 
 }
 
 static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start, size_t end, size_t month){
     size_t maxYear=0;
-    for(size_t i=start; i < end; i++){ 
-            float tempAvg = station.historyMonth[i][month].totalMonth / station.historyMonth[i][month].numDay; //SI NO FUNCIONA Q4 DAR VUELTA I Y J
-            if(monthAvg  <= tempAvg){
-                if((monthAvg  == tempAvg && maxYear < i) || (maxYear == i && (*topMonth) < month) || monthAvg < tempAvg){
-                    monthAvg  = tempAvg;
-                    maxYear = i;
-                    topMonth = month;
-                }
+    for(size_t i=start; i < end; i++){
+        float tempAvg = station.historyMonth[i][month].totalMonth / station.historyMonth[i][month].numDay; //SI NO FUNCIONA Q4 DAR VUELTA I Y J
+        if(monthAvg  <= tempAvg){
+            if((monthAvg  == tempAvg && maxYear < i) || (maxYear == i && (*topMonth) < month) || monthAvg < tempAvg){
+                monthAvg  = tempAvg;
+                maxYear = i;
+                topMonth = month;
             }
-        
+        }
+
     }
     return maxYear;
 }
@@ -542,7 +541,7 @@ int hasNextAvgTop(subADT sub){
 float NextAvgTop(subADT sub, char * station, char * line, size_t * year, char * month){
     if (sub == NULL){
         errno = PARAMERR;
-        return ERROR; 
+        return ERROR;
     }
     float avg;
     station = sub->it4->name;
@@ -564,10 +563,10 @@ void freeSub(subADT sub){
             free(sub->station[i].historyMonth[j]);
         }
         free(sub->station[i].historyMonth);
-        
+
     }
     free(sub->station);
-    
+
     freeList(sub->list1);
     freeListAVG(sub->list4); //Aca esta mal
     free(sub);
@@ -605,7 +604,7 @@ char nextTopbyLine(subADT sub, char * res[TOP]){
     }
     returnTopbyLine(sub->lines[it].top, res);
     sub->it2++;
-    char line = ((char) it)+DIFF; 
+    char line = ((char) it)+DIFF;
     return line;
 }
 
