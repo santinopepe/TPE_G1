@@ -7,7 +7,6 @@
 #include <strings.h>
 
 
-
 #define DIFF ('A')
 #define POS(n) ((n) - DIFF) //This macro gives us the position in the vector according to the line.
 #define PERIODSINTER 2 //This gives us the boundaries of the periods.
@@ -133,7 +132,7 @@ static size_t TopPeriodStation (subADT sub, int weekday, int period);
 static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start, size_t end, size_t month);
 
 
-static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, float monthAvg, char line, char * name);
+static avgTop * createAvgTopRec(avgTop * list, char * topMonth, size_t topYear, float monthAvg, char line, char * name);
 
 static void freeList(Tlist list);
 
@@ -151,8 +150,9 @@ subADT newSub(size_t startYear, size_t endYear){
 
 void addStations(subADT sub, char line, char * name, size_t stationID){
     errno=OK;
+
     if(stationID >= sub->dimStation){
-        sub->station = realloc(sub->station, stationID*sizeof(Tstation));
+        sub->station = realloc(sub->station, (stationID+1)*sizeof(Tstation));
         sub->dimStation=stationID;
         if(errno==ENOMEM || sub->station == NULL){
             errno = MEMERR;
@@ -160,15 +160,14 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
         }
     }
 
-    char lineUp=toupper(line);
-    sub->station[stationID].line=lineUp;
+    sub->station[stationID].line=line;
     sub->station[stationID].name = malloc(strlen(name)+1);
 
     if(errno==ENOMEM || sub->station[stationID].name == NULL){
         errno = MEMERR;
         return;
     }
-    sub->station[stationID].name=strcpy(sub->station[stationID].name, name);
+    strcpy(sub->station[stationID].name, name);
     //ACA VA UN CHECK ERROR por el strcpy ????????????
 }
 
@@ -181,9 +180,6 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     char isLeapYear = leapYearCalc(year);  //This helps calculate the day of the week if it is a leap year.
 
     sub->station[stationID].days[getPeriod(start,end)][getDayOfWeek(day,month,year,isLeapYear)] += numPassen; //Here we add passengers to a given day and period.
-
-
-    size_t largestYear = sub->station[stationID].maxYear[(int)month-1]; //This will help us know if we need to expand Tmonth * historyMonth[12] vector.
 
 
     if(sub->yearEnd < sub->yearStart){
@@ -334,7 +330,7 @@ int nextLine(subADT sub, char * line){
         return ERROR;
 
     }
-    (*line) =sub->it1->name;
+    line =sub->it1->name;
     int res=sub->it1->numTot;
     sub->it1=sub->it1->tail;
     return res;
@@ -377,10 +373,21 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
 
 
 
-static void StationLineTop (subADT sub){
+static void StationLineTop (subADT sub){ //SI NOS TIRA ERROR DE TOPLINE ES PQ HAY QUE PONER TOP = NULL
     for(size_t j = 0; j < sub->dimStation; j++){ //We move inside each line to every station.
-        char * TopFlag = 0; //This flag helps not create all the list given that if a statiuon doesn't enter top 3  it quits the comparison.
         char line = sub->station[j].line;
+        if(sub->dimLines <= POS(line)){
+            sub->lines = realloc(sub->lines, (POS(line)+1)*sizeof(Tline));
+            if(sub->lines == NULL || errno==ENOMEM){
+                errno=MEMERR;
+                return;
+            }
+            while(sub->dimLines < POS(line)){
+                sub->lines[sub->dimLines].passenTot = 0;
+                sub->dimLines++;
+            }
+        }
+        char * TopFlag = 0; //This flag helps not create all the list given that if a statiuon doesn't enter top 3  it quits the comparison.
         sub->lines[POS(line)].passenTot += sub->station[j].passenStation;
         sub->lines[POS(line)].top = StationLineTopRec(sub->lines[POS(line)].top, sub->lines[POS(line)].passenTot, sub->station[j].name, TopFlag);
     }
@@ -478,7 +485,7 @@ static void TopStationMonth(subADT sub){
 
             size_t topYear = bestStationMonth(sub->station[j], topMonth, monthAvg, sub->yearStart, yearEnd, i);
 
-            sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, monthAvg, sub->station[j].line, sub->station[j].name);
+            sub->list4 = createAvgTopRec(sub->list4, topMonth, topYear, monthAvg, sub->station[j].line, sub->station[j].name);
         }
     }
 
@@ -492,7 +499,7 @@ static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg
             if((monthAvg  == tempAvg && maxYear < i) || (maxYear == i && (*topMonth) < month) || monthAvg < tempAvg){
                 monthAvg  = tempAvg;
                 maxYear = i;
-                topMonth = month;
+                (*topMonth) = month;
             }
         }
 
@@ -500,7 +507,7 @@ static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg
     return maxYear;
 }
 
-static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, float monthAvg, char line, char * name){
+static avgTop * createAvgTopRec(avgTop * list, char * topMonth, size_t topYear, float monthAvg, char line, char * name){
     if(list == NULL || monthAvg >= list->avg){
         if((monthAvg == list->avg && strcasecmp(list->name, name) > 0) || monthAvg >= list->avg || list == NULL){
             avgTop * aux = malloc(sizeof(struct avgTop));
@@ -510,7 +517,7 @@ static avgTop * createAvgTopRec(avgTop * list, char topMonth, size_t topYear, fl
             }
             aux->avg = monthAvg;
             aux->line= line;
-            aux->month = topMonth;
+            aux->month = (*topMonth);
             aux->name = name;
             aux->year = topYear;
             aux->tail = list;
@@ -616,13 +623,3 @@ static void returnTopbyLine(Tlist list, char ** res){
     res[0]= list->name;
     returnTopbyLine(list->tail, res+1);
 }
-
-/* COSAS Q faltan:
- * Q1: en el toBegin del Q1 hay q llamar al StationLineTop, pq carga la cantindad de pasajeros por linea y llamar addListAmountPassen.
- * Q2: Falta terminar funciones de front.
- * Q4: Funciones de front, toBegin y los iteradores y next.
- *
- * FrontEnd:
- * Hacer las funciones de los Queries.
- *
- */
