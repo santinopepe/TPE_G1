@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <strings.h>
 
-
 #define DIFF ('A')
 #define POS(n) ((n) - DIFF) //This macro gives us the position in the vector according to the line.
 #define PERIODSINTER 2 //This gives us the boundaries of the periods.
@@ -160,6 +159,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
         }
     }
 
+    line = toupper(line);
     sub->station[stationID].line=line;
     sub->station[stationID].name = malloc(strlen(name)+1);
 
@@ -174,7 +174,6 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
 
 void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t numPassen, char start, char end){
     errno = OK;
-
     sub->station[stationID].passenStation += numPassen; // Here the number of passengers of a station increases.
 
     char isLeapYear = leapYearCalc(year);  //This helps calculate the day of the week if it is a leap year.
@@ -182,29 +181,23 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     sub->station[stationID].days[getPeriod(start,end)][getDayOfWeek(day,month,year,isLeapYear)] += numPassen; //Here we add passengers to a given day and period.
 
 
-    if(sub->yearEnd < sub->yearStart){
+    if((sub->yearEnd < sub->yearStart) && (sub->yearEnd != 0)){
         errno=PARAMERR;
         return;
     }
 
-
     if((sub->yearEnd==0 || year <= sub->yearEnd) && (sub->station[stationID].maxYear[month-1]<year) && (year >= sub->yearStart)){
-        sub->station[stationID].maxYear[(int)month-1]= year;
+        
         sub->station[stationID].historyMonth[(int)month-1]=realloc(sub->station[stationID].historyMonth[month-1],sizeof(Tmonth)*(year-sub->yearStart));
         if (errno == ENOMEM || sub->station[stationID].historyMonth[(int)month-1] == NULL ){
             errno = MEMERR;
             return;
         }
-        for(int i=0; i < year-sub->yearStart;i++){
+        for(int i=sub->station[stationID].maxYear[(int)month-1]; i < year; i++){
             sub->station[stationID].historyMonth[(int)month-1][i].numDay=0;
             sub->station[stationID].historyMonth[(int)month-1][i].totalMonth=0;
         }
-
-    }
-
-    //CHEQUEAMOS 2 VECES REVISAR!!!
-    if(year >= sub->yearStart){
-        sub->station[stationID].historyMonth[month-1][year-sub->yearStart].totalMonth+=numPassen;
+        sub->station[stationID].maxYear[(int)month-1]= year;
     }
 
 
@@ -243,16 +236,15 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     }
     */
     if (sub->yearStart <= year && (sub->yearEnd >= year || sub->yearEnd == 0)){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
+        sub->station[stationID].historyMonth[(int)month-1][year].totalMonth += numPassen;
 
-        sub->station[stationID].historyMonth[year][(int)month].totalMonth += numPassen;
-
-        if (sub->station[stationID].historyMonth[year][(int)month].numDay == 0){
+        if (sub->station[stationID].historyMonth[(int)month-1][year].numDay == 0){
 
             char daysOfMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
             if(month==2){ // #define
-                sub->station[stationID].historyMonth[year][(int)month].numDay = daysOfMonth[(int)month]+isLeapYear;
+                sub->station[stationID].historyMonth[(int)month-1][year].numDay = daysOfMonth[(int)month]+isLeapYear;
             } else{
-                sub->station[stationID].historyMonth[year][(int)month].numDay = daysOfMonth[(int)month];
+                sub->station[stationID].historyMonth[(int)month-1][year].numDay = daysOfMonth[(int)month];
             }
         }
     }
@@ -484,7 +476,6 @@ static void TopStationMonth(subADT sub){
             }
 
             size_t topYear = bestStationMonth(sub->station[j], topMonth, monthAvg, sub->yearStart, yearEnd, i);
-
             sub->list4 = createAvgTopRec(sub->list4, topMonth, topYear, monthAvg, sub->station[j].line, sub->station[j].name);
         }
     }
