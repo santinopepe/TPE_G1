@@ -162,13 +162,16 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
     line = toupper(line);
     sub->station[stationID].line=line;
     sub->station[stationID].name = malloc(strlen(name)+1);
+    for(int i=0; i<TOTALMONTH; i++){
+        sub->station[stationID].maxYear[i] = 0;
+        sub->station[stationID].historyMonth[i] = NULL;
+    }
 
     if(errno==ENOMEM || sub->station[stationID].name == NULL){
         errno = MEMERR;
         return;
     }
     strcpy(sub->station[stationID].name, name);
-    //ACA VA UN CHECK ERROR por el strcpy ????????????
 }
 
 
@@ -186,65 +189,28 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
         return;
     }
 
-    if((sub->yearEnd==0 || year <= sub->yearEnd) && (sub->station[stationID].maxYear[month-1]<year) && (year >= sub->yearStart)){
-        
-        sub->station[stationID].historyMonth[(int)month-1]=realloc(sub->station[stationID].historyMonth[month-1],sizeof(Tmonth)*(year-sub->yearStart));
+    if((sub->station[stationID].maxYear[(int)month-1]<year) && (sub->yearEnd==0 || year <= sub->yearEnd) && (year >= sub->yearStart)){
+        sub->station[stationID].historyMonth[(int)month-1]=realloc(sub->station[stationID].historyMonth[(int)month-1], sizeof(Tmonth)*(year-sub->yearStart + 1));
         if (errno == ENOMEM || sub->station[stationID].historyMonth[(int)month-1] == NULL ){
             errno = MEMERR;
             return;
         }
-        for(int i=sub->station[stationID].maxYear[(int)month-1]; i < year; i++){
+        for(int i=sub->station[stationID].maxYear[(int)month-1] - sub->yearStart; i < year - sub->yearStart; i++){
             sub->station[stationID].historyMonth[(int)month-1][i].numDay=0;
             sub->station[stationID].historyMonth[(int)month-1][i].totalMonth=0;
         }
-        sub->station[stationID].maxYear[(int)month-1]= year;
+        sub->station[stationID].maxYear[(int)month-1] = year;
     }
 
-
-
-    /*
-    //POSIBLE PROBLEMA cuando probamos nos fijamos
-    if(sub->yearEnd != 0 && sub->yearStart != 0 && sub->station[stationID].maxYear[month-1] == 0){
-        //Aca creamos la matriz cunado nos pasan los dos parametros.
-        sub->station[stationID].historyMonth[month-1] = calloc(sub->yearEnd-sub->yearStart, sizeof(Tmonth *) ); //CHEQUEAR ESTO (le ponemos historyMonth[12] se soluciona)
-        if (errno == ENOMEM || sub->station[stationID].historyMonth[month-1] != NULL ){
-            errno = MEMERR;
-            return;
-        }
-        for (int i = sub->yearStart-sub->; i <=  sub->yearEnd; i++){
-            sub->station[stationID].historyMonth[i] = calloc(TOTALMONTH, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
-            if (errno == ENOMEM || sub->station[stationID].historyMonth[i] != NULL ){
-                errno = MEMERR;
-                return;
-            }
-        }
-        sub->station[stationID].maxYear = -1;//igualo a 0 para q no vuelva a entrar
-    }else if ( sub->station[stationID].maxYear != -1 &&  year >= largestYear){
-        sub->station[stationID].historyMonth = realloc(sub->station[stationID].historyMonth, year * sizeof(Tmonth *)); //CHEQUEAR ES COMO EL DE LA LINEA 171
-        if (errno == ENOMEM || sub->station[stationID].historyMonth == NULL ){ //ACA me dice esto: Comparison of array 'sub->lines[lineNum].station[stationID].historyMonth' equal to a null pointer is always false
-            errno = MEMERR;
-            return;
-        }
-        for (int i = largestYear; i <= year; i++){
-            sub->station[stationID].historyMonth[i] = calloc(TOTALMONTH, sizeof(Tmonth)); //Me parece jugado de ultima ponemos un for que rellene con 0 va de 0 a 12.
-            if (errno == ENOMEM || sub->station[stationID].historyMonth[i] != NULL ){
-                errno = MEMERR;
-                return;
-            }
-        }
-
-    }
-    */
-    if (sub->yearStart <= year && (sub->yearEnd >= year || sub->yearEnd == 0)){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
-        sub->station[stationID].historyMonth[(int)month-1][year].totalMonth += numPassen;
-
-        if (sub->station[stationID].historyMonth[(int)month-1][year].numDay == 0){
+    if (sub->yearStart <= year && (sub->station[stationID].maxYear[(int)month-1] >= year || sub->yearEnd == 0)){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
+        sub->station[stationID].historyMonth[(int)month-1][year-sub->yearStart].totalMonth += numPassen;
+        if (sub->station[stationID].historyMonth[(int)month-1][year-sub->yearStart].numDay == 0){
 
             char daysOfMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
             if(month==2){ // #define
-                sub->station[stationID].historyMonth[(int)month-1][year].numDay = daysOfMonth[(int)month]+isLeapYear;
+                sub->station[stationID].historyMonth[(int)month-1][year-sub->yearStart].numDay = daysOfMonth[(int)month-1]+isLeapYear;
             } else{
-                sub->station[stationID].historyMonth[(int)month-1][year].numDay = daysOfMonth[(int)month];
+                sub->station[stationID].historyMonth[(int)month-1][year-sub->yearStart].numDay = daysOfMonth[(int)month-1];
             }
         }
     }
@@ -463,8 +429,6 @@ char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
 
 
 static void TopStationMonth(subADT sub){
-    size_t yearEnd;
-
     for(size_t j=0; j < sub->dimStation; j++){
             char * topMonth = 0;
             float monthAvg = 0;
@@ -485,7 +449,7 @@ static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg
                 if((monthAvg  == tempAvg && maxYear < i) || (maxYear == i && (*topMonth) < j) || monthAvg < tempAvg){
                     monthAvg  = tempAvg;
                     maxYear = i;
-                    topMonth = j;
+                    (*topMonth) = j;
                 }
             }
         }
