@@ -128,7 +128,7 @@ static void returnTopbyLine(Tlist list, char ** res);
 static size_t TopPeriodStation (subADT sub, int weekday, int period);
 
 
-static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start, size_t end, size_t month);
+static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start);
 
 
 static avgTop * createAvgTopRec(avgTop * list, char * topMonth, size_t topYear, float monthAvg, char line, char * name);
@@ -466,34 +466,29 @@ static void TopStationMonth(subADT sub){
     size_t yearEnd;
 
     for(size_t j=0; j < sub->dimStation; j++){
-        for(size_t i=0; i < TOTALMONTH; i++){
             char * topMonth = 0;
             float monthAvg = 0;
-            if (sub->yearEnd == 0){
-                yearEnd = sub->station[j].maxYear[i];
-            } else{
-                yearEnd = sub->yearEnd;
-            }
-
-            size_t topYear = bestStationMonth(sub->station[j], topMonth, monthAvg, sub->yearStart, yearEnd, i);
+            size_t topYear = bestStationMonth(sub->station[j], topMonth, monthAvg, sub->yearStart);
             sub->list4 = createAvgTopRec(sub->list4, topMonth, topYear, monthAvg, sub->station[j].line, sub->station[j].name);
         }
     }
 
-}
 
-static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start, size_t end, size_t month){
+
+static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg, size_t start){
     size_t maxYear=0;
-    for(size_t i=start; i < end; i++){
-        float tempAvg = station.historyMonth[i][month].totalMonth / station.historyMonth[i][month].numDay; //SI NO FUNCIONA Q4 DAR VUELTA I Y J
-        if(monthAvg  <= tempAvg){
-            if((monthAvg  == tempAvg && maxYear < i) || (maxYear == i && (*topMonth) < month) || monthAvg < tempAvg){
-                monthAvg  = tempAvg;
-                maxYear = i;
-                (*topMonth) = month;
+    for(int j=0; j < TOTALMONTH; j++){
+        size_t end=station.maxYear[j];
+          for(size_t i=start; i < end; i++){ //Aca si end es
+            float tempAvg = station.historyMonth[i][j].totalMonth / station.historyMonth[i][j].numDay; //SI NO FUNCIONA Q4 DAR VUELTA I Y J
+            if(monthAvg  <= tempAvg){
+                if((monthAvg  == tempAvg && maxYear < i) || (maxYear == i && (*topMonth) < j) || monthAvg < tempAvg){
+                    monthAvg  = tempAvg;
+                    maxYear = i;
+                    topMonth = j;
+                }
             }
         }
-
     }
     return maxYear;
 }
