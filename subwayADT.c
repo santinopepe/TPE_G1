@@ -189,6 +189,8 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
         return;
     }
 
+
+    /*
     if((sub->station[stationID].maxYear[(int)month-1]<year) && (sub->yearEnd==0 || year <= sub->yearEnd) && (year >= sub->yearStart)){
         sub->station[stationID].historyMonth[(int)month-1]=realloc(sub->station[stationID].historyMonth[(int)month-1], sizeof(Tmonth)*(year-sub->yearStart + 1));
         if (errno == ENOMEM || sub->station[stationID].historyMonth[(int)month-1] == NULL ){
@@ -213,7 +215,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
                 sub->station[stationID].historyMonth[(int)month-1][year-sub->yearStart].numDay = daysOfMonth[(int)month-1];
             }
         }
-    }
+    }*/
 }
 
 
@@ -331,26 +333,28 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
 
 
 
-static void StationLineTop (subADT sub){ //SI NOS TIRA ERROR DE TOPLINE ES PQ HAY QUE PONER TOP = NULL
+static void StationLineTop (subADT sub){ 
     for(size_t j = 0; j < sub->dimStation; j++){ //We move inside each line to every station.
-        char line = sub->station[j].line;
-        if(sub->dimLines <= POS(line)){
-            sub->lines = realloc(sub->lines, (POS(line)+1)*sizeof(Tline));
-            if(sub->lines == NULL || errno==ENOMEM){
-                errno=MEMERR;
-                return;
+        if(sub->station[j].name != NULL && ('A'<=sub->station[j].line && sub->station[j].line <= 'Z')){
+            char line = sub->station[j].line;
+            if(sub->dimLines <= POS(line)){
+                sub->lines = realloc(sub->lines, (POS(line)+1)*sizeof(Tline));
+                if(sub->lines == NULL || errno==ENOMEM){
+                    errno=MEMERR;
+                    return;
+                }
+                while(sub->dimLines < POS(line)){
+                    sub->lines[sub->dimLines].passenTot = 0;
+                    sub->lines[sub->dimLines].top = NULL;
+                }
+                sub->dimLines = POS(line)+1;
             }
-            while(sub->dimLines < POS(line)){
-                sub->lines[sub->dimLines].passenTot = 0;
-                sub->dimLines++;
-            }
+            char TopFlag = 0; //This flag helps not create all the list given that if a statiuon doesn't enter top 3  it quits the comparison.
+            sub->lines[POS(line)].passenTot += sub->station[j].passenStation;
+            sub->lines[POS(line)].top = StationLineTopRec(sub->lines[POS(line)].top, sub->lines[POS(line)].passenTot, sub->station[j].name, &TopFlag);
         }
-        char * TopFlag = 0; //This flag helps not create all the list given that if a statiuon doesn't enter top 3  it quits the comparison.
-        sub->lines[POS(line)].passenTot += sub->station[j].passenStation;
-        sub->lines[POS(line)].top = StationLineTopRec(sub->lines[POS(line)].top, sub->lines[POS(line)].passenTot, sub->station[j].name, TopFlag);
     }
 }
-
 
 
 static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char  * TopFlag){
@@ -366,8 +370,9 @@ static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName,
         return aux;
 
     }
+
     (*TopFlag)++;
-    if (*TopFlag == 3){ //If this condition is true the station doesn't enter top 3, so we don't care.
+    if ((*TopFlag) == 3){ //If this condition is true the station doesn't enter top 3, so we don't care.
         return top;
     }
     top->tail = StationLineTopRec(top->tail, NumPassen, StationName, TopFlag);
@@ -444,7 +449,7 @@ static size_t bestStationMonth(Tstation station, char * topMonth, float monthAvg
     for(int j=0; j < TOTALMONTH; j++){
         size_t end=station.maxYear[j];
           for(size_t i=start; i < end; i++){ //Aca si end es
-            float tempAvg = station.historyMonth[i][j].totalMonth / station.historyMonth[i][j].numDay; //SI NO FUNCIONA Q4 DAR VUELTA I Y J
+            float tempAvg = station.historyMonth[j][i].totalMonth / station.historyMonth[j][i].numDay; //SI NO FUNCIONA Q4 DAR VUELTA I Y J
             if(monthAvg  <= tempAvg){
                 if((monthAvg  == tempAvg && maxYear < i) || (maxYear == i && (*topMonth) < j) || monthAvg < tempAvg){
                     monthAvg  = tempAvg;
