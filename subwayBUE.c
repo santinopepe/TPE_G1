@@ -3,6 +3,7 @@
 #include "subwayADT.h"
 #include "htmlTable.h"
 
+
 #define MAX_CHARS 50
 #define DELIM ";"
 #define CHANGE_LINE "\n"
@@ -12,6 +13,7 @@
 #define CANTWEEKDAYS 7
 #define OPENBR '('
 #define SPACE ' '
+#define LINE_SPACE 2
 
 subADT readStations(FILE * stations, subADT sub);
 void readTurnstiles(subADT sub, FILE * turnstiles);
@@ -173,14 +175,13 @@ void query1(subADT sub){
 
     toBeginLines(sub);
 
-    char line;
+    char line[LINE_SPACE];
     char res[MAX_CHARS];
     while(hasNextLine(sub)){
         
-        size_t totalLinePassen = nextLine(sub, &line);
-        printf("line %c\n", line);
-        
-        fprintf(query1Arch, "%c;%ld\n", line, totalLinePassen);
+        size_t totalLinePassen = nextLine(sub, line);
+
+        fprintf(query1Arch, "%s;%ld\n", line, totalLinePassen);
         sprintf(res, "%ld", totalLinePassen); 
         addHTMLRow(table1, &line, res); 
     }
@@ -204,15 +205,12 @@ void query2(subADT sub){
     toBeginTopbyLine(sub);
     
     while(hasNextTopbyLine(sub)){
-        char * stations[3];
-        char line[1];
+        char * stations[TOP];
+        char line[LINE_SPACE];
         line[0] = nextTopbyLine(sub, stations);
-        line[1] = 0; 
-
+        line[1] = '\0'; 
         fprintf(query2Arch, "%s;%s;%s;%s\n", line, stations[0], stations[1], stations[2]);
-        addHTMLRow(table2, line, stations[0], stations[1], stations[2]); //NO ME ACUERDO SI ERA CON STRINGS
-
-        nextLine(sub, line);
+        addHTMLRow(table2, line, stations[0], stations[1], stations[2]);
     }
 
     fclose(query2Arch);
@@ -297,5 +295,5 @@ void joinStationLine(char * res, char * station, char * line){
     res[dim++] = OPENBR;
     strcpy(res+dim, line);
     res[++dim] = OPENBR+1;
-    res[++dim] = 0;
+    res[++dim] = '\0';
 }

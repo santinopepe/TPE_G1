@@ -571,19 +571,21 @@ char nextTopbyLine(subADT sub, char * res[TOP]){
     int it=sub->it2;
     //To make sure the response matrix has a 0 if there are less than 3 stations in the line
     for(int i=0; i<TOP; i++){
-        res[i]=0;
+        res[i]=NULL;
     }
-    returnTopbyLine(sub->lines[it].top, res);
+    int flag = 0;
+    returnTopbyLine(sub->lines[it].top, res, &flag);
     sub->it2++;
     char line = ((char) it)+DIFF;
     return line;
-}
+}   
 
 
-static void returnTopbyLine(Tlist list, char ** res){
-    if(list==NULL){
+static void returnTopbyLine(Tlist list, char ** res, int * flag){
+    if(list==NULL || (*flag) == TOP){
         return;
     }
-    res[0]= list->name;
-    returnTopbyLine(list->tail, res+1);
+    res[(*flag)]= list->name;
+    (*flag)++;
+    returnTopbyLine(list->tail, res, flag);
 }
