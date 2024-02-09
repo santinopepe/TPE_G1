@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <strings.h>
 
+
 #define DIFF ('A')
 #define POS(n) ((n) - DIFF) //This macro gives us the position in the vector according to the line.
 #define PERIODSINTER 2 //This gives us the boundaries of the periods.
@@ -81,8 +82,6 @@ typedef struct subCDT{
 }subCDT;
 
 
-
-
 //Prototipos:
 
 // This function gives a number from 0 to 3 indicating what period the journey was made.
@@ -153,12 +152,11 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
 
     if(stationID >= sub->dimStation){
         sub->station = realloc(sub->station, (stationID+1)*sizeof(Tstation));
-        sub->dimStation=stationID;
         if(errno==ENOMEM || sub->station == NULL){
             errno = MEMERR;
             return; //ESTA BN ASI CHEQUEO DE ALLOC?????
         }
-    for(int j=sub->dimStation; j<stationID; j++){
+    for(size_t j=sub->dimStation; j<=stationID; j++){
         sub->station[j].passenStation=0; //passenStation counts the passengers so if it has 
         //rubbish data in it the results won't be accurate
         for(int i=0; i<TOTALMONTH; i++){ 
@@ -168,7 +166,9 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
         sub->station[j].historyMonth[i] = NULL;
         }
     }
+    sub->dimStation=stationID;
     }
+    
 
     line = toupper(line);
     sub->station[stationID].line=line;
@@ -197,8 +197,8 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
         return;
     }
 
-
-    
+/*
+    printf("id %ld, month %d, year %ld, max year %ld\n", stationID, month-1, year-sub->yearStart, sub->station[stationID].maxYear[(int)month-1]);
     if((sub->station[stationID].maxYear[(int)month-1] < year) && (sub->yearEnd==0 || year <= sub->yearEnd) && (year >= sub->yearStart)){
         sub->station[stationID].historyMonth[(int)month-1]=realloc(sub->station[stationID].historyMonth[(int)month-1], sizeof(Tmonth)*(year-sub->yearStart + 1));
         if (errno == ENOMEM || sub->station[stationID].historyMonth[(int)month-1] == NULL ){
@@ -214,6 +214,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
 
     if (sub->yearStart <= year && (sub->station[stationID].maxYear[(int)month-1] >= year || sub->yearEnd == 0)){ //Preguntar si esta bien esto historyMonth[year][month] o  hay q poner historyMonth[year]->numday.
         sub->station[stationID].historyMonth[(int)month-1][year-sub->yearStart].totalMonth += numPassen;
+        
         if (sub->station[stationID].historyMonth[(int)month-1][year-sub->yearStart].numDay == 0){
 
             char daysOfMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
@@ -223,7 +224,7 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
                 sub->station[stationID].historyMonth[(int)month-1][year-sub->yearStart].numDay = daysOfMonth[(int)month-1];
             }
         }
-    }
+    }*/
 }
 
 
@@ -260,9 +261,12 @@ static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear){
 
 
 void toBeginLines(subADT sub){
+    printf("entre a tobegin\n");
     StationLineTop(sub);
+    printf("pase stationLineTop\n");
     //to make a list with the lines in order of how many passengers they have when the user/frontend  asks for it
     addListAmountPassen(sub);
+    printf("pase addList\n");
     sub->it1=sub->list1;
 }
 
@@ -317,9 +321,9 @@ static void addListAmountPassen(subADT sub){
 static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
     errno=OK;
     int c;
-    if(list==NULL || list->numTot<numPassen){
-        c = list->numTot - numPassen;
-        if(list == NULL || c!=0 || (c == 0 && (line < list->name[0]))){ //Me parece que esta rara la ultima condicion.
+
+    if(list==NULL || list->numTot < numPassen){
+        if(list == NULL || (c = list->numTot - numPassen)!=0 || (c == 0 && (line < list->name[0]))){ //Me parece que esta rara la ultima condicion.
             Tlist aux = malloc(sizeof(struct node));
             if(errno == ENOMEM){
                 errno = MEMERR;
@@ -340,7 +344,6 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
 }
 
 
-
 static void StationLineTop (subADT sub){ 
     for(size_t j = 0; j < sub->dimStation; j++){ //We move inside each line to every station.
         if(sub->station[j].name != NULL && ('A'<=sub->station[j].line && sub->station[j].line <= 'Z')){
@@ -351,9 +354,9 @@ static void StationLineTop (subADT sub){
                     errno=MEMERR;
                     return;
                 }
-                while(sub->dimLines < POS(line)){
-                    sub->lines[sub->dimLines].passenTot = 0;
-                    sub->lines[sub->dimLines].top = NULL;
+                for(size_t i=sub->dimLines; i < POS(line) + 1; i++){
+                    sub->lines[i].passenTot = 0;
+                    sub->lines[i].top = NULL;
                 }
                 sub->dimLines = POS(line)+1;
             }
@@ -365,7 +368,7 @@ static void StationLineTop (subADT sub){
 }
 
 
-static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char  * TopFlag){
+static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char * TopFlag){
     if (top == NULL || NumPassen > top->numTot){
         Tlist aux = malloc(sizeof(struct node));
         if(errno == ENOMEM){
@@ -380,14 +383,12 @@ static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName,
     }
 
     (*TopFlag)++;
-    if ((*TopFlag) == 3){ //If this condition is true the station doesn't enter top 3, so we don't care.
+    if (*TopFlag == 3){ //If this condition is true the station doesn't enter top 3, so we don't care.
         return top;
     }
     top->tail = StationLineTopRec(top->tail, NumPassen, StationName, TopFlag);
     return top;
 }
-
-
 
 
 

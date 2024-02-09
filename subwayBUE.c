@@ -24,9 +24,10 @@ void query3(subADT sub);
 void query4(subADT sub);
 
 
+
 int main(int numArg, char * argv[]){
     if(numArg < 3 && numArg > 5){
-        fprintf(stderr, "Error, amount of arguments not valid");
+        fprintf(stderr, "Error, amount of arguments not valid\n");
         exit(ARGERR);
     }
 
@@ -122,7 +123,7 @@ void readTurnstiles(subADT sub, FILE * turnstiles){
 
         temp = strtok(NULL, DELIM);
         year = atoi(temp);
-
+        
         temp = strtok(NULL, HOUR_DELIM);
         start = atoi(temp);
         strtok(NULL, DELIM); //salteo los minutos
@@ -136,7 +137,6 @@ void readTurnstiles(subADT sub, FILE * turnstiles){
 
         temp = strtok(NULL, CHANGE_LINE);
         numPassen = atoi(temp);
-
         addDataTrips(sub, day, month, year, id, numPassen, start, end);
     }
 }
@@ -160,6 +160,7 @@ char * copyName(char * name, char * aux){
 
 
 void query1(subADT sub){
+    printf("entre q1\n");
     FILE * query1Arch = fopen("query1.csv", "wt");
     htmlTable table1 = newTable("query1.html", 2, "Línea", "Pasajeros");
 
@@ -168,19 +169,20 @@ void query1(subADT sub){
         exit(OPENERR);
     }
 
-    fputs("Línea;Pasajeros", query1Arch);
+    fputs("Línea;Pasajeros\n", query1Arch);
 
     toBeginLines(sub);
 
-    char * line=NULL;
+    char line;
+    char res[MAX_CHARS];
     while(hasNextLine(sub)){
         
-        size_t totalLinePassen = nextLine(sub, line);
-
-        fprintf(query1Arch, "%s;%ld\n", line, totalLinePassen);
-        addHTMLRow(table1, line, totalLinePassen); //NO ME ACUERDO SI ERA CON STRINGS
-
-        nextLine(sub, line);
+        size_t totalLinePassen = nextLine(sub, &line);
+        printf("line %c\n", line);
+        
+        fprintf(query1Arch, "%c;%ld\n", line, totalLinePassen);
+        sprintf(res, "%ld", totalLinePassen); 
+        addHTMLRow(table1, &line, res); 
     }
 
     fclose(query1Arch);
@@ -188,6 +190,7 @@ void query1(subADT sub){
 }
 
 void query2(subADT sub){
+    printf("entre q2\n");
     FILE * query2Arch = fopen("query2.csv", "wt");
     htmlTable table2 = newTable("query2.html", 4, "Línea", "Top1Pasajeros", "Top2Pasajeros", "Top3Pasajeros");
 
@@ -218,6 +221,7 @@ void query2(subADT sub){
 
 
 void query3(subADT sub){
+    printf("entre q3\n");
     FILE * query3Arch = fopen("query3.csv", "wt");
     htmlTable table3 = newTable("query3.html", 5, "Día", "TopMañana", "TopMediodía", "TopTarde", "TopNoche");
 
@@ -268,12 +272,16 @@ void query4(subADT sub){
     size_t * year=NULL; 
     char * month=NULL;
     char res[MAX_CHARS];
+    char resAvg[MAX_CHARS];
+    char resYear[MAX_CHARS];
 
     while(hasNextAvgTop(sub)){
         float avg = NextAvgTop(sub, station, line, year, month);
         joinStationLine(res, station, line);
         fprintf(query4Arch, "%s;%f;%ld;%s\n", res, avg, (*year), month);
-        addHTMLRow(table4, station, line, avg, year, month); 
+        sprintf(resAvg, "%f", avg);
+        sprintf(resYear, "%ld", (*year));
+        addHTMLRow(table4, station, line, resAvg, resYear, month); 
     }
     
 
