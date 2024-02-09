@@ -3,7 +3,6 @@
 #include "subwayADT.h"
 #include "htmlTable.h"
 
-
 #define MAX_CHARS 50
 #define DELIM ";"
 #define CHANGE_LINE "\n"
@@ -50,6 +49,7 @@ int main(int numArg, char * argv[]){
             exit(ERRDATE);
         }
     }else if (numArg == 5) {
+        year_start = atoi(argv[3]);
         year_end = atoi(argv[4]);
         if (year_end <= 0 && year_start <= 0 && year_start >= year_end) {
             fprintf(stderr, "Error, imput date not valid");
@@ -200,7 +200,7 @@ void query2(subADT sub){
         exit(OPENERR);
     }
 
-    fputs("Línea;Top1Pasajeros;Top2Pasajeros;Top3Pasajeros", query2Arch);
+    fputs("Línea;Top1Pasajeros;Top2Pasajeros;Top3Pasajeros\n", query2Arch);
 
     toBeginTopbyLine(sub);
     
@@ -228,13 +228,13 @@ void query3(subADT sub){
         exit(OPENERR);
     }
 
-    fputs("Día;TopMañana;TopMediodía;TopTarde;TopNoche", query3Arch);
+    fputs("Día;TopMañana;TopMediodía;TopTarde;TopNoche\n", query3Arch);
 
     toBeginTopPeriod(sub);
     
     char * days[CANTWEEKDAYS] = {"LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"};
     char * stations[CANTPERIODS];
-    char * lines[CANTPERIODS];
+    char lines[CANTPERIODS][LINE_SPACE];
     char res[CANTPERIODS][MAX_CHARS];
     
     for(int i=0; i<CANTWEEKDAYS; i++){
@@ -253,6 +253,7 @@ void query3(subADT sub){
 }
 
 void query4(subADT sub){
+    printf("entre q4\n");
     FILE * query4Arch = fopen("query4.csv", "wt");
     htmlTable table4 = newTable("query4.html", 4, "Estación", "TopPromedio", "Año", "Mes");
 
@@ -295,5 +296,5 @@ void joinStationLine(char * res, char * station, char * line){
     res[dim++] = OPENBR;
     strcpy(res+dim, line);
     res[++dim] = OPENBR+1;
-    res[++dim] = '\0';
+    res[++dim] = 0;
 }
