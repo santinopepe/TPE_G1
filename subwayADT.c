@@ -16,6 +16,7 @@
 #define NOID -1
 #define NOTOPSTATION "S/D"
 #define ERROR -1
+#define FEB 2
 
 
 
@@ -157,15 +158,21 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
             errno = MEMERR;
             return; //ESTA BN ASI CHEQUEO DE ALLOC?????
         }
+    for(int j=sub->dimStation; j<stationID; j++){
+        sub->station[j].passenStation=0; //passenStation counts the passengers so if it has 
+        //rubbish data in it the results won't be accurate
+        for(int i=0; i<TOTALMONTH; i++){ 
+        //maxYear indicates the highest year of each month and it is used to know the size of the vector
+        // if it has rubbish it won't be possible to enlarge it correctly
+        sub->station[j].maxYear[i] = 0;
+        sub->station[j].historyMonth[i] = NULL;
+        }
+    }
     }
 
     line = toupper(line);
     sub->station[stationID].line=line;
     sub->station[stationID].name = malloc(strlen(name)+1);
-    for(int i=0; i<TOTALMONTH; i++){
-        sub->station[stationID].maxYear[i] = 0;
-        sub->station[stationID].historyMonth[i] = NULL;
-    }
 
     if(errno==ENOMEM || sub->station[stationID].name == NULL){
         errno = MEMERR;
@@ -173,6 +180,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
     }
     strcpy(sub->station[stationID].name, name);
 }
+
 
 
 void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t numPassen, char start, char end){
@@ -190,8 +198,8 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
     }
 
 
-    /*
-    if((sub->station[stationID].maxYear[(int)month-1]<year) && (sub->yearEnd==0 || year <= sub->yearEnd) && (year >= sub->yearStart)){
+    
+    if((sub->station[stationID].maxYear[(int)month-1] < year) && (sub->yearEnd==0 || year <= sub->yearEnd) && (year >= sub->yearStart)){
         sub->station[stationID].historyMonth[(int)month-1]=realloc(sub->station[stationID].historyMonth[(int)month-1], sizeof(Tmonth)*(year-sub->yearStart + 1));
         if (errno == ENOMEM || sub->station[stationID].historyMonth[(int)month-1] == NULL ){
             errno = MEMERR;
@@ -209,13 +217,13 @@ void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationI
         if (sub->station[stationID].historyMonth[(int)month-1][year-sub->yearStart].numDay == 0){
 
             char daysOfMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-            if(month==2){ // #define
+            if(month==FEB){ 
                 sub->station[stationID].historyMonth[(int)month-1][year-sub->yearStart].numDay = daysOfMonth[(int)month-1]+isLeapYear;
             } else{
                 sub->station[stationID].historyMonth[(int)month-1][year-sub->yearStart].numDay = daysOfMonth[(int)month-1];
             }
         }
-    }*/
+    }
 }
 
 
