@@ -49,8 +49,8 @@ int main(int numArg, char * argv[]){
     }else if (numArg == 5) {
         year_start = atoi(argv[3]);
         year_end = atoi(argv[4]);
-        if (year_end <= 0 && year_start <= 0 && year_start >= year_end) {
-            fprintf(stderr, "Error, imput date not valid");
+        if (year_end <= 0 || year_start <= 0 || year_start > year_end) {
+            fprintf(stderr, "Error, imput date not valid\n");
             exit(ERRDATE);
         }
     }

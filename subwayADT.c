@@ -127,7 +127,7 @@ static void returnTopbyLine(Tlist list, char ** res, int * flag);
 static size_t TopPeriodStation (subADT sub, int weekday, int period);
 
 
-static size_t bestStationMonth(Tstation station, char * topMonth, float * monthAvg);
+static size_t bestStationMonth(Tstation station, char * topMonth, float * monthAvg, size_t startYear);
 
 
 static avgTop * createAvgTopRec(avgTop * list, char * topMonth, size_t topYear, float * monthAvg, char line, char * name);
@@ -167,11 +167,11 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
         sub->station[j].passenStation=0; //passenStation counts the passengers so if it has 
         //rubbish data in it the results won't be accurate
         for(int i=0; i<TOTALMONTH; i++){ 
-        //maxYear indicates the highest year of each month and it is used to know the size of the vector
-        // if it has rubbish it won't be possible to enlarge it correctly
-        sub->station[j].maxYear[i] = 0;
-        sub->station[j].minYear[i] = 0;
-        sub->station[j].historyMonth[i] = NULL;
+            //maxYear indicates the highest year of each month and it is used to know the size of the vector
+            // if it has rubbish it won't be possible to enlarge it correctly
+            sub->station[j].maxYear[i] = 0;
+            sub->station[j].minYear[i] = 0;
+            sub->station[j].historyMonth[i] = NULL;
         }
     }
     sub->dimStation=stationID;
@@ -204,24 +204,31 @@ void addDataTrips(subADT sub, char day, char month, int year, int stationID, int
 
    //Q4
    if(max < year && (sub->yearEnd==0 || year <= sub->yearEnd) && (year >= sub->yearStart)){
-    sub->station[stationID].historyMonth[month-1] = realloc(sub->station[stationID].historyMonth[month-1], (year-sub->yearStart + 1)*sizeof(Tmonth));
-    if (errno == ENOMEM || sub->station[stationID].historyMonth[(int)month-1] == NULL ){
-            errno = MEMERR;
-            return;
+        sub->station[stationID].historyMonth[month-1] = realloc(sub->station[stationID].historyMonth[month-1], (year-sub->yearStart + 1)*sizeof(Tmonth));
+        if (errno == ENOMEM || sub->station[stationID].historyMonth[(int)month-1] == NULL ){
+                errno = MEMERR;
+                return;
+        }
+        for(int i=max-sub->yearStart; i <= year-sub->yearStart; i++){
+            sub->station[stationID].historyMonth[month-1][i].totalMonth = 0;
+            sub->station[stationID].historyMonth[month-1][i].numDay = getDayOfMonth(month, leap);
+        }
+        if(sub->yearEnd==0){
+            sub->station[stationID].maxYear[month-1]=year;
+        } else {
+            sub->station[stationID].maxYear[month-1]=sub->yearEnd;
+        }
     }
-    for(int i=max-sub->yearStart; i <= year-sub->yearStart; i++){
-        sub->station[stationID].historyMonth[month-1][i].totalMonth = 0;
-        sub->station[stationID].historyMonth[month-1][i].numDay = getDayOfMonth(month, leap);
-    }
-    sub->station[stationID].maxYear[month-1]=year;
+    
+    if((sub->yearEnd==0 || year <= sub->yearEnd) && (year >= sub->yearStart)){
+        sub->station[stationID].historyMonth[month-1][year-sub->yearStart].totalMonth += numPassen;
     }
 
-    sub->station[stationID].historyMonth[month-1][year-sub->yearStart].totalMonth += numPassen;
-
-    if((sub->station[stationID].minYear[month-1] >= sub->yearStart) && (sub->station[stationID].minYear[month-1] == 0  || sub->station[stationID].minYear[month-1] > year)){
+    if((sub->station[stationID].minYear[month-1] >= sub->yearStart) && (sub->station[stationID].minYear[month-1] == 0  || sub->station[stationID].minYear[month-1] > year) && sub->yearStart==0){
         sub->station[stationID].minYear[month-1] = year;
+    } else if(sub->yearStart!=0){
+        sub->station[stationID].minYear[month-1] = sub->yearStart;
     }
-
 }
 
 static int getDayOfMonth(char month, char leap){
@@ -454,21 +461,21 @@ static void TopStationMonth(subADT sub){
     for(size_t j=sub->minID; j < sub->dimStation; j++){
             char  topMonth = 0;
             float  monthAvg = 0;
-            size_t topYear = bestStationMonth(sub->station[j], &topMonth, &monthAvg);
+            size_t topYear = bestStationMonth(sub->station[j], &topMonth, &monthAvg, sub->yearStart);
             sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, &monthAvg, sub->station[j].line, sub->station[j].name);
         }
     }
 
 
 
-static size_t bestStationMonth(Tstation station, char * topMonth, float * monthAvg){
+static size_t bestStationMonth(Tstation station, char * topMonth, float * monthAvg, size_t startYear){
     size_t maxYear=0;
     float mAvg = 0;
     char tMonth=0;
-    for(int j=0; j < TOTALMONTH && station.minYear[j]!=0; j++){
+    for(int j=0; j < TOTALMONTH && station.minYear[j]!=0 && station.maxYear[j]!=0; j++){
         int start = station.minYear[j]; //CHEQUEAR SI PONER size_t o int
         int end=station.maxYear[j];
-          for(size_t i=start; i <= end; i++){ 
+          for(size_t i=start-startYear; i <= end-startYear; i++){ 
             float num = station.historyMonth[j][i].totalMonth;
             float denom = station.historyMonth[j][i].numDay;
             float tempAvg = (num / denom); 
@@ -484,12 +491,12 @@ static size_t bestStationMonth(Tstation station, char * topMonth, float * monthA
     }
     (*topMonth) = tMonth;
     (*monthAvg) = mAvg;
-    return maxYear;
+    return maxYear + startYear;
 }
 
 static avgTop * createAvgTopRec(avgTop * list, char * topMonth, size_t topYear, float * monthAvg, char line, char * name){
     if(list == NULL || (*monthAvg)  >= list->avg){
-        if(list == NULL || ((*monthAvg)  == list->avg && strcasecmp(list->name, name) > 0) || (*monthAvg)  >= list->avg){
+        if(list == NULL || (((*monthAvg) == list->avg) && strcasecmp(list->name, name) > 0) || (*monthAvg)  > list->avg){
             avgTop * aux = malloc(sizeof(struct avgTop));
             if(aux == NULL){
                 errno = MEMERR;
