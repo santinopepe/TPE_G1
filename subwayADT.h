@@ -8,6 +8,7 @@ typedef struct subCDT * subADT;
 
 #define TOP 3
 
+
 // In case there are no extra parameters that represent the starting and/or ending year to compare the month
 // with the highest average of each station please enter a 0 (zero) in the corresponding argument
 subADT newSub(size_t startYear, size_t endYear);
@@ -20,7 +21,8 @@ void addStations(subADT sub, char line, char * name, size_t stationID);
 
 
 // This function adds the data from each trip.
-void addDataTrips(subADT sub, char day, char month, size_t year, size_t stationID, size_t cantPassen, char start, char end);
+void addDataTrips(subADT sub, char day, char month, int year, int stationID, int cantPassen, char start, char end);
+
 
 //sets an iterator to start looking at the lines from the one with most passengers to the one with the least
 void toBeginLines(subADT sub); //CONVIENE HACERLO CON RETURN INT PARA CHEQUEAR QUE SALIO TODO OK?

@@ -74,7 +74,7 @@ int main(int numArg, char * argv[]){
     query3(sub);
     query4(sub);
 
-    free(sub);
+    freeSub(sub);
 }
 
 subADT readStations(FILE * stations, subADT sub){
@@ -162,7 +162,6 @@ char * copyName(char * name, char * aux){
 
 
 void query1(subADT sub){
-    printf("entre q1\n");
     FILE * query1Arch = fopen("query1.csv", "wt");
     htmlTable table1 = newTable("query1.html", 2, "Línea", "Pasajeros");
 
@@ -191,7 +190,6 @@ void query1(subADT sub){
 }
 
 void query2(subADT sub){
-    printf("entre q2\n");
     FILE * query2Arch = fopen("query2.csv", "wt");
     htmlTable table2 = newTable("query2.html", 4, "Línea", "Top1Pasajeros", "Top2Pasajeros", "Top3Pasajeros");
 
@@ -219,7 +217,6 @@ void query2(subADT sub){
 
 
 void query3(subADT sub){
-    printf("entre q3\n");
     FILE * query3Arch = fopen("query3.csv", "wt");
     htmlTable table3 = newTable("query3.html", 5, "Día", "TopMañana", "TopMediodía", "TopTarde", "TopNoche");
 
@@ -253,7 +250,6 @@ void query3(subADT sub){
 }
 
 void query4(subADT sub){
-    printf("entre q4\n");
     FILE * query4Arch = fopen("query4.csv", "wt");
     htmlTable table4 = newTable("query4.html", 4, "Estación", "TopPromedio", "Año", "Mes");
 
@@ -262,28 +258,28 @@ void query4(subADT sub){
         exit(OPENERR);
     }
 
-    fputs("Estación;TopPromedio;Año;Mes", query4Arch);
+    fputs("Estación;TopPromedio;Año;Mes\n", query4Arch);
 
     toBeginAvgTop(sub);
     
-    char * station=NULL;
-    char * line=NULL;
-    size_t * year=NULL; 
-    char * month=NULL;
+    char station[MAX_CHARS];
+    char line[LINE_SPACE];
+    size_t year= 0; 
+    char month= 0;
     char res[MAX_CHARS];
     char resAvg[MAX_CHARS];
     char resYear[MAX_CHARS];
+    char resMonth[MAX_CHARS];
 
     while(hasNextAvgTop(sub)){
-        float avg = NextAvgTop(sub, station, line, year, month);
+        float avg = NextAvgTop(sub, station, line, &year, &month);
         joinStationLine(res, station, line);
-        fprintf(query4Arch, "%s;%f;%ld;%s\n", res, avg, (*year), month);
+        fprintf(query4Arch, "%s;%.2f;%ld;%d\n", res, avg, year, month);
         sprintf(resAvg, "%f", avg);
-        sprintf(resYear, "%ld", (*year));
+        sprintf(resYear, "%ld", year);
+        sprintf(resMonth, "%d", month);
         addHTMLRow(table4, station, line, resAvg, resYear, month); 
     }
-    
-
     fclose(query4Arch);
     closeHTMLTable(table4);
 }
@@ -296,5 +292,5 @@ void joinStationLine(char * res, char * station, char * line){
     res[dim++] = OPENBR;
     strcpy(res+dim, line);
     res[++dim] = OPENBR+1;
-    res[++dim] = 0;
+    res[++dim] = '\0';
 }
