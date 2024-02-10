@@ -8,8 +8,6 @@
 #define CHANGE_LINE "\n"
 #define DATE_DELIM "/"
 #define HOUR_DELIM ":"
-#define CANTPERIODS 4 
-#define CANTWEEKDAYS 7
 #define OPENBR '('
 #define SPACE ' '
 #define LINE_SPACE 2

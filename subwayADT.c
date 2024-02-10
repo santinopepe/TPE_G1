@@ -9,10 +9,7 @@
 #define DIFF ('A')
 #define POS(n) ((n) - DIFF) //This macro gives us the position in the vector according to the line.
 #define PERIODSINTER 2 //This gives us the boundaries of the periods.
-#define CANTPERIODS 4 //This gives us the number of periods.
 #define LEAPYEAR 1
-#define TOTALMONTH 12
-#define CANTWEEKDAYS 7
 #define NOID -1
 #define NOTOPSTATION "S/D"
 #define ERROR -1
