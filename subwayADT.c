@@ -196,6 +196,7 @@ void addDataTrips(subADT sub, char day, char month, int year, int stationID, int
     sub->station[stationID].passenStation += numPassen;
    
     int max = sub->station[stationID].maxYear[month-1];
+    
     char leap = leapYearCalc(year);
 
     //Q3
@@ -209,14 +210,15 @@ void addDataTrips(subADT sub, char day, char month, int year, int stationID, int
                 errno = MEMERR;
                 return;
         }
-        for(int i=max-sub->yearStart; i <= year-sub->yearStart; i++){
+        if(max != 0){
+        max-=sub->yearStart;
+        }
+        for(int i=max; i <= year-sub->yearStart; i++){
             sub->station[stationID].historyMonth[month-1][i].totalMonth = 0;
             sub->station[stationID].historyMonth[month-1][i].numDay = getDayOfMonth(month, leap);
         }
-        if(sub->yearEnd==0){
+        if((year<=sub->yearEnd || sub->yearEnd==0) && year > sub->station[stationID].maxYear[month-1]){
             sub->station[stationID].maxYear[month-1]=year;
-        } else {
-            sub->station[stationID].maxYear[month-1]=sub->yearEnd;
         }
     }
     
@@ -224,10 +226,8 @@ void addDataTrips(subADT sub, char day, char month, int year, int stationID, int
         sub->station[stationID].historyMonth[month-1][year-sub->yearStart].totalMonth += numPassen;
     }
 
-    if((sub->station[stationID].minYear[month-1] >= sub->yearStart) && (sub->station[stationID].minYear[month-1] == 0  || sub->station[stationID].minYear[month-1] > year) && sub->yearStart==0){
+    if((year <= sub->yearEnd || sub->yearEnd==0) && (year >= sub->yearStart) && (sub->station[stationID].minYear[month-1] == 0  || sub->station[stationID].minYear[month-1] > year)){
         sub->station[stationID].minYear[month-1] = year;
-    } else if(sub->yearStart!=0){
-        sub->station[stationID].minYear[month-1] = sub->yearStart;
     }
 }
 
@@ -472,20 +472,21 @@ static size_t bestStationMonth(Tstation station, char * topMonth, float * monthA
     size_t maxYear=0;
     float mAvg = 0;
     char tMonth=0;
-    for(int j=0; j < TOTALMONTH && station.minYear[j]!=0 && station.maxYear[j]!=0; j++){
+    for(int j=0; j < TOTALMONTH ; j++){
         int start = station.minYear[j]; //CHEQUEAR SI PONER size_t o int
         int end=station.maxYear[j];
-          for(size_t i=start-startYear; i <= end-startYear; i++){ 
-            float num = station.historyMonth[j][i].totalMonth;
-            float denom = station.historyMonth[j][i].numDay;
-            float tempAvg = (num / denom); 
-            if(mAvg  <= tempAvg){
-                if(mAvg  < tempAvg || (mAvg == tempAvg && maxYear < i) || (mAvg == tempAvg && maxYear == i && tMonth < j)){
-                    mAvg = tempAvg;
-                    maxYear = i;
-                    tMonth = j;
+          for(size_t i=start-startYear; i <= end-startYear && station.minYear[j]!=0 && station.maxYear[j]!=0 ; i++){ 
+            
+                float num = station.historyMonth[j][i].totalMonth;
+                float denom = station.historyMonth[j][i].numDay;
+                float tempAvg = (num / denom); 
+                if(mAvg<=tempAvg){
+                    if(mAvg  < tempAvg || (mAvg == tempAvg && maxYear < i) || (mAvg == tempAvg && maxYear == i && tMonth < j)){
+                        mAvg = tempAvg;
+                        maxYear = i;
+                        tMonth = j;
+                    }
                 }
-            }
             
         }
     }
