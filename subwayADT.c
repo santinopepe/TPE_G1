@@ -360,7 +360,7 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
 
 static void StationLineTop (subADT sub){ 
     for(size_t j = 0; j < sub->dimStation; j++){ //We move inside each line to every station.
-        if(sub->station[j].name != NULL && ('A'<=sub->station[j].line && sub->station[j].line <= 'Z')){
+        if(sub->station[j].name != NULL && ('A'<=sub->station[j].line && sub->station[j].line <= 'Z')){ //CAMBIAR 'a' y 'z'
             char line = sub->station[j].line;
             if(sub->dimLines <= POS(line)){
                 sub->lines = realloc(sub->lines, (POS(line)+1)*sizeof(Tline));
@@ -389,7 +389,11 @@ static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName,
             errno= MEMERR;
             return top;
         }
-        aux->name = StationName;
+        if (NumPassen != 0){
+            aux->name = StationName;
+        } else{
+            aux->name = NOTOPSTATION;
+        }
         aux->numTot=NumPassen;
         aux->tail = top;
         return aux;
