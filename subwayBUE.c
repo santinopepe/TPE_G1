@@ -274,7 +274,7 @@ void query4(subADT sub){
         sprintf(resAvg, "%f", avg);
         sprintf(resYear, "%ld", year);
         sprintf(resMonth, "%d", month);
-        addHTMLRow(table4, station, line, resAvg, resYear, month); 
+        addHTMLRow(table4, res, resAvg, resYear, resMonth); 
     }
     fclose(query4Arch);
     closeHTMLTable(table4);
