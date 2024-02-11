@@ -173,6 +173,12 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
             sub->station[j].minYear[i] = 0;
             sub->station[j].historyMonth[i] = NULL;
         }
+        //HABIA Q INICIALIZAR LA MATRIZ, igual imprime s/d y cosas raras fijarse q onda. 
+        for(int i = 0; i < CANTWEEKDAYS; i++){
+            for(int k = 0; k < CANTPERIODS; k++){
+                sub->station[j].days[k][i] = 0;
+            }
+        }
     }
     sub->dimStation=stationID;
     }
