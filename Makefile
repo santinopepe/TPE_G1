@@ -13,8 +13,5 @@ clean: cleanQueries cleanHTML
 cleanQueries:
 	rm -rf $(QUERIES)
 
-cleanObjs:
-	rm -rf $(OBJS)
-
 cleanHTML:
 	rm -rf $(HTML)
