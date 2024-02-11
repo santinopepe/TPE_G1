@@ -31,7 +31,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID);
 // This function saves the data from each trip.
 // It receives a date: day, month, year. The station id which the information corresponds,
 // the amount of passengers between the periods start and end hour.
-void addDataTrips(subADT sub, char day, char month, int year, int stationID, int cantPassen, char start, char end);
+void addDataTrips(subADT sub, char day, char month, int year, int stationID, int cantPassen, char end);
 
 // Sets an iterator to start looking at the lines from the one with
 // most passengers to the one with the least and sorts the data.
