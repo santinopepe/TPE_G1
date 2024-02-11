@@ -25,7 +25,7 @@ void query4(subADT sub);
 
 
 int main(int numArg, char * argv[]){
-    if(numArg < 3 && numArg > 5){
+    if(numArg < 3 || numArg > 5){
         fprintf(stderr, "Error, amount of arguments not valid\n");
         exit(ARGERR);
     }
@@ -105,7 +105,7 @@ subADT readStations(FILE * stations, subADT sub){
 
 void readTurnstiles(subADT sub, FILE * turnstiles){
     char text[MAX_CHARS];
-    char day, month, start, end;
+    char day, month, end;
     size_t year, id, numPassen;
     char * temp;
     fscanf(turnstiles, "%s\n", text);
@@ -123,9 +123,7 @@ void readTurnstiles(subADT sub, FILE * turnstiles){
 
         temp = strtok(NULL, DELIM);
         year = atoi(temp);
-        
-        temp = strtok(NULL, HOUR_DELIM);
-        start = atoi(temp);
+
         strtok(NULL, DELIM); //salteo los minutos
 
         temp = strtok(NULL, HOUR_DELIM);
@@ -137,7 +135,7 @@ void readTurnstiles(subADT sub, FILE * turnstiles){
 
         temp = strtok(NULL, CHANGE_LINE);
         numPassen = atoi(temp);
-        addDataTrips(sub, day, month, year, id, numPassen, start, end);
+        addDataTrips(sub, day, month, year, id, numPassen, end);
     }
 }
 
