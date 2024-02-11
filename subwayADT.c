@@ -339,23 +339,20 @@ static void addListAmountPassen(subADT sub){
 
 static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
     errno=OK;
-    int c;
 
-    if(list==NULL || list->numTot < numPassen){
-        if(list == NULL || (c = list->numTot - numPassen)!=0 || (c == 0 && (line < list->name[0]))){ //Me parece que esta rara la ultima condicion.
-            Tlist aux = malloc(sizeof(struct node));
-            if(errno == ENOMEM){
-                errno = MEMERR;
-                return list;
-            }
-            aux->name=malloc(sizeof(char)+1);
-            aux->name[0]= line;
-            aux->name[1] = '\0'; 
-            aux->numTot=numPassen;
-            aux->tail = list;
-            
-            return aux;
+    if(list==NULL || list->numTot < numPassen || (list->numTot == numPassen && (line < list->name[0]))){//Me parece que esta rara la ultima condicion.
+        Tlist aux = malloc(sizeof(struct node));
+        if(errno == ENOMEM){
+            errno = MEMERR;
+            return list;
         }
+        aux->name=malloc(sizeof(char)+1);
+        aux->name[0]= line;
+        aux->name[1] = '\0'; 
+        aux->numTot=numPassen;
+        aux->tail = list;
+        
+        return aux;
     }
 
     //si no cumple con las condiciones pasa al siguinte
@@ -389,7 +386,7 @@ static void StationLineTop (subADT sub){
 
 
 static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char * TopFlag){
-    if (top == NULL || NumPassen > top->numTot){
+    if (top == NULL || NumPassen > top->numTot || (NumPassen == top->numTot && strcasecmp(top->name,StationName) > 0)){
         Tlist aux = malloc(sizeof(struct node));
         if(errno == ENOMEM){
             errno= MEMERR;
@@ -403,11 +400,10 @@ static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName,
         aux->numTot=NumPassen;
         aux->tail = top;
         return aux;
-
     }
 
     (*TopFlag)++;
-    if (*TopFlag == 3){ //If this condition is true the station doesn't enter top 3, so we don't care.
+    if (*TopFlag == 3){ //If this condition is true the station doesn't enter top 3, so we conisder it
         return top;
     }
     top->tail = StationLineTopRec(top->tail, NumPassen, StationName, TopFlag);
