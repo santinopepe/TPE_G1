@@ -286,9 +286,11 @@ void query4(subADT sub){
 void joinStationLine(char * res, char * station, char * line){
     int dim = strlen(station);
     strcpy(res, station);
-    res[dim++] = SPACE;
-    res[dim++] = OPENBR;
-    strcpy(res+dim, line);
-    res[++dim] = OPENBR+1;
-    res[++dim] = '\0';
+    if(strcmp(station,NOTOPSTATION) != 0){
+        res[dim++] = SPACE;
+        res[dim++] = OPENBR;
+        strcpy(res+dim, line);
+        res[++dim] = OPENBR+1;
+        res[++dim] = '\0';
+    }
 }

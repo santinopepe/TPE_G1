@@ -7,9 +7,9 @@
 typedef struct subCDT * subADT;
 
 #define TOP 3
-#define TOTALMONTH 12
 #define CANTWEEKDAYS 7
 #define CANTPERIODS 4 //This gives us the number of periods.
+#define NOTOPSTATION "S/D"
 
 
 // In case there are no extra parameters that represent the starting and/or ending year to compare the month

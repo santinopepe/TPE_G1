@@ -11,9 +11,9 @@
 #define PERIODSINTER 2 //This gives us the boundaries of the periods.
 #define LEAPYEAR 1
 #define NOID -1
-#define NOTOPSTATION "S/D"
 #define ERROR -1
 #define FEB 2
+#define TOTALMONTH 12
 
 
 
@@ -329,8 +329,8 @@ int nextLine(subADT sub, char * line){
 
 
 static void addListAmountPassen(subADT sub){
-    for (size_t i=0; i < sub->dimLines; i++){
-        if(sub->dimStation != 0 && sub->lines[i].passenTot != 0){
+    for (size_t i=sub->minID; i < sub->dimLines; i++){
+        if(sub->lines[i].passenTot != 0){
             sub->list1=addListAmountPassenRec(sub->list1, sub->lines[i].passenTot, (char)i + DIFF);
         }
     }
@@ -365,8 +365,8 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
 
 
 static void StationLineTop (subADT sub){ 
-    for(size_t j = 0; j < sub->dimStation; j++){ //We move inside each line to every station.
-        if(sub->station[j].name != NULL && ('A'<=sub->station[j].line && sub->station[j].line <= 'Z')){ //CAMBIAR 'a' y 'z'
+    for(size_t j = sub->minID; j < sub->dimStation; j++){ //We move inside each line to every station.
+        if(sub->station[j].name != NULL){
             char line = sub->station[j].line;
             if(sub->dimLines <= POS(line)){
                 sub->lines = realloc(sub->lines, (POS(line)+1)*sizeof(Tline));
@@ -472,7 +472,9 @@ static void TopStationMonth(subADT sub){
             char  topMonth = 0;
             float  monthAvg = 0;
             size_t topYear = bestStationMonth(sub->station[j], &topMonth, &monthAvg, sub->yearStart);
-            sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, &monthAvg, sub->station[j].line, sub->station[j].name);
+            if(monthAvg!=0){
+                sub->list4 = createAvgTopRec(sub->list4, &topMonth, topYear, &monthAvg, sub->station[j].line, sub->station[j].name);
+            }
         }
     }
 
