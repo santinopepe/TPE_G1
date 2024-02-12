@@ -19,6 +19,8 @@
 
 #define FEB 2 // This is the number the month february occupies.
 
+#define JAN 1 // This is the month number that january occupies.
+
 #define TOTALMONTH 12
 
 
@@ -178,12 +180,12 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
         sub->station = realloc(sub->station, (stationID+1)*sizeof(Tstation));
         if(errno==ENOMEM || sub->station == NULL){
             errno = MEMERR;
-            return; 
+            return;
         }
         for(size_t j=sub->dimStation; j<=stationID; j++){
         sub->station[j].passenStation=0; // passenStation counts the passengers so if it has
                                         //  rubbish data in it the results won't be accurate
-        for(int i=0; i<TOTALMONTH; i++){ 
+        for(int i=0; i<TOTALMONTH; i++){
             //  MaxYear indicates the highest year of each month, minYear indicates the lowest year it appears of each month,
             //  there are used to know the size of the vector and where start looking for the information.
             //  If it has rubbish it won't be possible to enlarge it correctly,
@@ -215,45 +217,52 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
 
 void addDataTrips(subADT sub, char day, char month, int year, int stationID, int numPassen, char end){
     errno = OK;
-    sub->station[stationID].passenStation += numPassen;
-   
-    int max = sub->station[stationID].maxYear[month-1]; //Max year of a given month.
-    
-    char leap = leapYearCalc(year);
 
-    sub->station[stationID].days[getPeriod(end)][getDayOfWeek(day,month,year,leap)] += numPassen;
+    if (sub->dimStation > stationID && sub->station[stationID].name != NULL ){ // This condition helps us know if the station id
+                                                                              // is from a valid station.
+        sub->station[stationID].passenStation += numPassen;
 
-    //It is used to enlarge the history month matrix.
-   if(max < year && (sub->yearEnd==0 || year <= sub->yearEnd) && (year >= sub->yearStart)){
-        sub->station[stationID].historyMonth[month-1] = realloc(sub->station[stationID].historyMonth[month-1], (year-sub->yearStart + 1)*sizeof(Tmonth));
-        if (errno == ENOMEM || sub->station[stationID].historyMonth[(int)month-1] == NULL ){
+        int max = sub->station[stationID].maxYear[month-1]; //Max year of a given month.
+
+        char leap = leapYearCalc(year);
+
+        sub->station[stationID].days[getPeriod(end)][getDayOfWeek(day,month,year,leap)] += numPassen;
+
+        //It is used to enlarge the history month matrix.
+        if(max < year && (sub->yearEnd==0 || year <= sub->yearEnd) && (year >= sub->yearStart)){
+            sub->station[stationID].historyMonth[month-1] = realloc(sub->station[stationID].historyMonth[month-1], (year-sub->yearStart + 1)*sizeof(Tmonth));
+            if (errno == ENOMEM || sub->station[stationID].historyMonth[(int)month-1] == NULL ){
                 errno = MEMERR;
                 return;
+            }
+            if(max != 0){
+                max-=sub->yearStart; //Used to fill correctly the data.
+            }
+            for(int i=max; i <= year-sub->yearStart; i++){
+                sub->station[stationID].historyMonth[month-1][i].totalMonth = 0;
+                sub->station[stationID].historyMonth[month-1][i].numDay = getDayOfMonth(month, leap);
+            }
+            if((year<=sub->yearEnd || sub->yearEnd==0) && year > sub->station[stationID].maxYear[month-1]){
+                sub->station[stationID].maxYear[month-1]=year;
+            }
         }
-        if(max != 0){
-        max-=sub->yearStart; //Used to fill correctly the data.
+
+        if((sub->yearEnd==0 || year <= sub->yearEnd) && (year >= sub->yearStart)){
+            sub->station[stationID].historyMonth[month-1][year-sub->yearStart].totalMonth += numPassen;
         }
-        for(int i=max; i <= year-sub->yearStart; i++){
-            sub->station[stationID].historyMonth[month-1][i].totalMonth = 0;
-            sub->station[stationID].historyMonth[month-1][i].numDay = getDayOfMonth(month, leap);
+
+        if((year <= sub->yearEnd || sub->yearEnd==0) && (year >= sub->yearStart) && (sub->station[stationID].minYear[month-1] == 0  || sub->station[stationID].minYear[month-1] > year)){
+            sub->station[stationID].minYear[month-1] = year;
         }
-        if((year<=sub->yearEnd || sub->yearEnd==0) && year > sub->station[stationID].maxYear[month-1]){
-            sub->station[stationID].maxYear[month-1]=year;
-        }
-    }
-    
-    if((sub->yearEnd==0 || year <= sub->yearEnd) && (year >= sub->yearStart)){
-        sub->station[stationID].historyMonth[month-1][year-sub->yearStart].totalMonth += numPassen;
+
+
     }
 
-    if((year <= sub->yearEnd || sub->yearEnd==0) && (year >= sub->yearStart) && (sub->station[stationID].minYear[month-1] == 0  || sub->station[stationID].minYear[month-1] > year)){
-        sub->station[stationID].minYear[month-1] = year;
-    }
 }
 
 static int getDayOfMonth(char month, char leap){
     char daysOfMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-    if(month==FEB){ 
+    if(month==FEB){
         return daysOfMonth[(int)month-1]+leap; //If it is february and a leap year then the month has 29 days.
     }
         return daysOfMonth[(int)month-1];
@@ -373,10 +382,10 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
             return list;
         }
         aux->name[0]= line;
-        aux->name[1] = '\0'; 
+        aux->name[1] = '\0';
         aux->numTot=numPassen;
         aux->tail = list;
-        
+
         return aux;
     }
 
@@ -491,7 +500,7 @@ static size_t TopPeriodStation (subADT sub, int weekday, int period){
     size_t TopStationPassen = 0;
     for (size_t j = sub->minID;  j < sub->dimStation; j++){
         if (TopStationPassen <= sub->station[j].days[period][weekday]){
-            if (TopStationPassen != sub->station[j].days[period][weekday] || (TopStationPassen == sub->station[j].days[period][weekday] && (strcasecmp(sub->station[TopID].name,sub->station[j].name) > 0))){ 
+            if (TopStationPassen != sub->station[j].days[period][weekday] || (TopStationPassen == sub->station[j].days[period][weekday] && (strcasecmp(sub->station[TopID].name,sub->station[j].name) > 0))){
                 TopStationPassen = sub->station[j].days[period][weekday];
                 TopID = j;
             }
@@ -545,11 +554,11 @@ static size_t bestStationMonth(Tstation station, char * topMonth, float * monthA
     for(int j=0; j < TOTALMONTH ; j++){
         int start = station.minYear[j];
         int end=station.maxYear[j];
-          for(size_t i=start-startYear; i <= end-startYear && station.minYear[j]!=0 && station.maxYear[j]!=0 ; i++){ 
-            
+          for(size_t i=start-startYear; i <= end-startYear && station.minYear[j]!=0 && station.maxYear[j]!=0 ; i++){
+
                 float num = station.historyMonth[j][i].totalMonth;
                 float denom = station.historyMonth[j][i].numDay;
-                float tempAvg = (num / denom); 
+                float tempAvg = (num / denom);
                 if(mAvg<=tempAvg){
                     if(mAvg  < tempAvg || (mAvg == tempAvg && maxYear < i) || (mAvg == tempAvg && maxYear == i && tMonth < j)){
                         mAvg = tempAvg;
@@ -557,7 +566,7 @@ static size_t bestStationMonth(Tstation station, char * topMonth, float * monthA
                         tMonth = j;
                     }
                 }
-            
+
         }
     }
     (*topMonth) = tMonth;
@@ -617,7 +626,13 @@ float NextAvgTop(subADT sub, char * station, char * line, size_t * year, char * 
     line[0] = sub->it4->line;
     line[1] = '\0';
     (*year) = sub->it4->year;
-    (*month) = sub->it4->month;
+
+    if (sub->it4->month == 0){ //Inside our program january is represented as 0, so we need to change it.
+        (*month) = JAN;
+    } else{
+        (*month) = sub->it4->month;
+    }
+
     avg = sub->it4->avg;
     sub->it4 =sub->it4->tail;
 
@@ -668,7 +683,7 @@ static void freeListAVG(avgTop * list){
 static void freeLine(Tlist list){
     if (list == NULL){
         return;
-    }    
+    }
     freeLine(list->tail);
     free(list->name);
     free(list);
