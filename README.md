@@ -40,4 +40,21 @@ make cleanHTML
 In order to remove the files of the queries of both extensions, run the command:
 make clean
 
+## Return values:
+If the return value is 0 then it means everything went as planed. If not, then the exit values go as listed below:
 
+MEMERR: Memory error, exit value 1. 
+
+TOKENERR: Token error, exit value 2.
+
+ARGERR: Error in the quantity of archives, exit value 3.
+
+OPENERR: Error opening archives, exit value 4.
+
+NEXTERR: Error on the iterator, exit value 5.
+
+ERRID: Error on a invalid id, exit value 6.
+
+ERRDATE: Error on a invalid date, exit value 7.
+
+PARAMERR: Error in the parameter provided by the frontend, exit value 8.
