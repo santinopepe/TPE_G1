@@ -190,7 +190,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
         }
         for(size_t j=sub->dimStation; j<=stationID; j++){
         sub->station[j].passenStation=0; // passenStation counts the passengers so if it has
-        sub->station[j].name=NULL;                                //  rubbish data in it the results won't be accurate
+        sub->station[j].name=NULL;               //  rubbish data in it the results won't be accurate
         for(int i=0; i<TOTALMONTH; i++){
             //  MaxYear indicates the highest year of each month, minYear indicates the lowest year it appears of each month,
             //  there are used to know the size of the vector and where start looking for the information.
@@ -361,7 +361,7 @@ static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName,
     }
 
     (*TopFlag)++;
-    if ((*TopFlag) == 3){ // If this condition is true the station doesn't enter top 3, so we don't consider it.
+    if ((*TopFlag) == TOP){ // If this condition is true the station doesn't enter top 3, so we don't consider it.
         return top;
     }
     top->tail = StationLineTopRec(top->tail, NumPassen, StationName, TopFlag);
