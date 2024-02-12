@@ -1,4 +1,4 @@
-#include "../TPE1/TPE_DEF/htmlTable.h"
+#include "htmlTable.h"
 #include <stdarg.h>
 #include <stdlib.h>
 
