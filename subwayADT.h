@@ -47,6 +47,7 @@ int nextLine(subADT sub, char * line);
 
 // Sets an iterator to start looking at the lines in
 // alphabetic order and with the 3 stations with most passengers from each line.
+// In the case there are less than 3 stations it points to NULL.
 void toBeginTopbyLine(subADT sub);
 
 // Returns if there is another subway line next in alphabethic order.

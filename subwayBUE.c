@@ -3,7 +3,7 @@
 #include "subwayADT.h"
 #include "htmlTable.h"
 
-#define MAX_CHARS 50
+#define MAX_CHARS 50 
 #define DELIM ";"
 #define CHANGE_LINE "\n"
 #define DATE_DELIM "/"
@@ -12,9 +12,21 @@
 #define SPACE ' '
 #define LINE_SPACE 2
 
+/*-------------------------------------------------------------------------- PROTOTYPES --------------------------------------------------------------------------------------------*/
+
+// The function reads the stations in order to extract the station id, it´s name and line.
+// It returns the ADT with the information collected.
 subADT readStations(FILE * stations, subADT sub);
+
+// The function reads the data from the turnstiles.csv archive and exctracts from it the station id, the date (day, month, year), 
+// the amount of passengers and the hour. 
 void readTurnstiles(subADT sub, FILE * turnstiles);
+
+// It copies the station´s name and returns the stations name.
 char * copyName(char * name, char * aux);
+
+//This function merges the stations name with it´s line. It recives a char pointer where the result is going to be,
+// the station name and subway line.
 void joinStationLine(char * res, char * station, char * line);
 
 void query1(subADT sub);
@@ -22,7 +34,7 @@ void query2(subADT sub);
 void query3(subADT sub);
 void query4(subADT sub);
 
-
+/*----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 int main(int numArg, char * argv[]){
     if(numArg < 3 || numArg > 5){
@@ -34,7 +46,7 @@ int main(int numArg, char * argv[]){
     FILE * fileStations = fopen(argv[2], "rt");
 
     if(fileTurnstiles == NULL || fileStations == NULL){
-        fprintf(stderr, "Error, could not open files");
+        fprintf(stderr, "Error, could not open files\n");
         exit(OPENERR);
     }
     
@@ -42,22 +54,23 @@ int main(int numArg, char * argv[]){
 
     if (numArg == 4) {
         year_start = atoi(argv[3]);
-        if (year_start <= 0) {
-            fprintf(stderr, "Error, imput date not valid");
+        if (year_start <= 0) { // If it only recives the start year it check if it is a valid date
+            fprintf(stderr, "Error, imput date not valid\n");
             exit(ERRDATE);
         }
-    }else if (numArg == 5) {
+    }else if (numArg == 5) { 
         year_start = atoi(argv[3]);
         year_end = atoi(argv[4]);
-        if (year_end <= 0 || year_start <= 0 || year_start > year_end) {
+        if (year_end <= 0 || year_start <= 0 || year_start > year_end) {// If it recives the start and end year, it checks for validity.
             fprintf(stderr, "Error, imput date not valid\n");
             exit(ERRDATE);
         }
     }
 
-    subADT sub = newSub(year_start, year_end);
+    subADT sub = newSub(year_start, year_end); //creates the ADT
+
     if(sub == NULL){
-        fprintf(stderr, "Error, could not assign memory");
+        fprintf(stderr, "Error, could not assign memory\n");
         exit(MEMERR);
     }
 
@@ -88,7 +101,7 @@ subADT readStations(FILE * stations, subADT sub){
             fprintf(stderr, "Token error");
             exit(TOKENERR);
         }
-        size_t id = atoi(temp);
+        size_t id = atoi(temp); // It changes the number from a string to a integer
 
         name = copyName(name, NULL);
 
@@ -98,6 +111,10 @@ subADT readStations(FILE * stations, subADT sub){
         strtok(NULL, CHANGE_LINE);
 
         addStations(sub, line, name, id);
+        if(errno != OK){
+            fprintf(stderr, "Error in addStation\n");
+            exit(errno);
+        }
     }
     free(name);
     return sub;
@@ -124,18 +141,23 @@ void readTurnstiles(subADT sub, FILE * turnstiles){
         temp = strtok(NULL, DELIM);
         year = atoi(temp);
 
-        strtok(NULL, DELIM); //salteo los minutos
+        strtok(NULL, DELIM); // Skip´s hour start
 
         temp = strtok(NULL, HOUR_DELIM);
         end = atoi(temp);
-        strtok(NULL, DELIM); //salteo los minutos
+        strtok(NULL, DELIM); // Skip´s the minutes in the hour end
 
         temp = strtok(NULL, DELIM);
         id = atoi(temp);
 
         temp = strtok(NULL, CHANGE_LINE);
         numPassen = atoi(temp);
+
         addDataTrips(sub, day, month, year, id, numPassen, end);
+        if(errno != OK){
+            fprintf(stderr, "Error in addDataTrips\n");
+            exit(errno);
+        }
     }
 }
 
@@ -159,7 +181,7 @@ char * copyName(char * name, char * aux){
 
 void query1(subADT sub){
     FILE * query1Arch = fopen("query1.csv", "wt");
-    htmlTable table1 = newTable("query1.html", 2, "Línea", "Pasajeros");
+    htmlTable table1 = newTable("query1.html", 2, "Línea", "Pasajeros"); //Creates the HTML tables 
 
     if(query1Arch == NULL || table1 == NULL){
         fprintf(stderr, "Error, could not open files");
@@ -169,15 +191,22 @@ void query1(subADT sub){
     fputs("Línea;Pasajeros\n", query1Arch);
 
     toBeginLines(sub);
+    if(errno != OK){
+        fprintf(stderr, "Error in toBeginLines\n");
+        exit(errno);
+    }
 
     char line[LINE_SPACE];
     char res[MAX_CHARS];
     while(hasNextLine(sub)){
-        
+        if(errno != OK){
+            fprintf(stderr, "Error in hasNextLine\n");
+            exit(errno);
+        }
         size_t totalLinePassen = nextLine(sub, line);
 
         fprintf(query1Arch, "%s;%ld\n", line, totalLinePassen);
-        sprintf(res, "%ld", totalLinePassen); 
+        sprintf(res, "%ld", totalLinePassen); // Changes the value of totalLinePassen from a size_t to a string.
         addHTMLRow(table1, &line, res); 
     }
 
@@ -197,12 +226,26 @@ void query2(subADT sub){
     fputs("Línea;Top1Pasajeros;Top2Pasajeros;Top3Pasajeros\n", query2Arch);
 
     toBeginTopbyLine(sub);
+    if(errno != OK){
+        fprintf(stderr, "Error in toBeginTopbyLine\n");
+        exit(errno);
+    }
     
     while(hasNextTopbyLine(sub)){
+        if(errno != OK){
+            fprintf(stderr, "Error in hasNextTopbyLine\n");
+            exit(errno);
+        }
         char * stations[TOP];
         char line[LINE_SPACE];
+
         line[0] = nextTopbyLine(sub, stations);
-        line[1] = '\0'; 
+        line[1] = '\0'; // Null terminates the string.
+        for(int i=0; i<TOP; i++){
+            if(stations[i]==NULL){
+                stations[i]=NOTOPSTATION;
+            }
+        }
         fprintf(query2Arch, "%s;%s;%s;%s\n", line, stations[0], stations[1], stations[2]);
         addHTMLRow(table2, line, stations[0], stations[1], stations[2]);
     }
@@ -217,13 +260,17 @@ void query3(subADT sub){
     htmlTable table3 = newTable("query3.html", 5, "Día", "TopMañana", "TopMediodía", "TopTarde", "TopNoche");
 
     if(query3Arch == NULL || table3 == NULL){
-        fprintf(stderr, "Error, could not open files");
+        fprintf(stderr, "Error, could not open files\n");
         exit(OPENERR);
     }
 
     fputs("Día;TopMañana;TopMediodía;TopTarde;TopNoche\n", query3Arch);
 
     toBeginTopPeriod(sub);
+    if(errno != OK){
+        fprintf(stderr, "Error in toBeginTopPeriod\n");
+        exit(errno);
+    }
     
     char * days[CANTWEEKDAYS] = {"LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"};
     char * stations[CANTPERIODS];
@@ -233,6 +280,10 @@ void query3(subADT sub){
     for(int i=0; i<CANTWEEKDAYS; i++){
         for(int j=0; j<CANTPERIODS; j++){
             stations[j] = getTopStationPeriod(sub, j, i, lines[j]);
+            if(errno != OK){
+                fprintf(stderr, "Error in getTopStationPeriod\n");
+                exit(errno);
+            }
             joinStationLine(res[j], stations[j], lines[j]);
         }
         
@@ -240,7 +291,6 @@ void query3(subADT sub){
         addHTMLRow(table3, days[i], res[0], res[1], res[2], res[3]); 
     }
     
-
     fclose(query3Arch);
     closeHTMLTable(table3);
 }
@@ -257,6 +307,10 @@ void query4(subADT sub){
     fputs("Estación;TopPromedio;Año;Mes\n", query4Arch);
 
     toBeginAvgTop(sub);
+    if(errno != OK){
+        fprintf(stderr, "Error in toBeginAvgTop\n");
+        exit(errno);
+    }
     
     char station[MAX_CHARS];
     char line[LINE_SPACE];
@@ -268,14 +322,23 @@ void query4(subADT sub){
     char resMonth[MAX_CHARS];
 
     while(hasNextAvgTop(sub)){
+        if(errno != OK){
+            fprintf(stderr, "Error in hasNextAvgTop\n");
+            exit(errno);
+        }
+
         float avg = NextAvgTop(sub, station, line, &year, &month);
         joinStationLine(res, station, line);
+
         fprintf(query4Arch, "%s;%.2f;%ld;%d\n", res, avg, year, month);
-        sprintf(resAvg, "%f", avg);
+
+        sprintf(resAvg, "%.2f", avg);
         sprintf(resYear, "%ld", year);
         sprintf(resMonth, "%d", month);
+
         addHTMLRow(table4, res, resAvg, resYear, resMonth); 
     }
+
     fclose(query4Arch);
     closeHTMLTable(table4);
 }
@@ -284,7 +347,9 @@ void query4(subADT sub){
 void joinStationLine(char * res, char * station, char * line){
     int dim = strlen(station);
     strcpy(res, station);
-    if(strcmp(station,NOTOPSTATION) != 0){
+
+    if(strcmp(station, NOTOPSTATION) != 0){ // If the station name is the same as NOTOPSTATION ("S/D") then it means that ther is no line data.
+                                            // To not print rubbish we omit it
         res[dim++] = SPACE;
         res[dim++] = OPENBR;
         strcpy(res+dim, line);

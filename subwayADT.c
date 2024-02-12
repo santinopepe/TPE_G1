@@ -123,7 +123,7 @@ static void StationLineTop (subADT sub);
 
 // This is a recursive function that helps the creation of the top 3.
 // It returns the top 3 stations of each line or less if there are fewer stations.
-static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char  * TopFlag);
+static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, int  * TopFlag);
 
 // Function that puts the names of the top3 stations in a line in the vector res
 // in case the line has less than 3 stations the positions in the vector stay empty
@@ -132,6 +132,11 @@ static void returnTopbyLine(Tlist list, char ** res, int * flag);
 // Returns the ID of the most popular station by period and weekday,
 // it complements the following function PeriodWeekDayTop.
 static size_t TopPeriodStation (subADT sub, int weekday, int period);
+
+// This function calls bestStationMonth in order to get the best month of every station and the call the function createAvgTopRec
+// to sort the data.
+static void TopStationMonth(subADT sub);
+
 
 // This function receives a char pointer to get the best month a station, a float pointer to get the best month average
 // of the station, also it receives the start year of the information.
@@ -152,6 +157,7 @@ static void freeLine(Tlist list);
 // Recursive function that frees the top average list.
 static void freeListAVG(avgTop * list);
 
+/*-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 subADT newSub(size_t startYear, size_t endYear){
     errno = OK;
@@ -184,7 +190,7 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
         }
         for(size_t j=sub->dimStation; j<=stationID; j++){
         sub->station[j].passenStation=0; // passenStation counts the passengers so if it has
-                                        //  rubbish data in it the results won't be accurate
+        sub->station[j].name=NULL;                                //  rubbish data in it the results won't be accurate
         for(int i=0; i<TOTALMONTH; i++){
             //  MaxYear indicates the highest year of each month, minYear indicates the lowest year it appears of each month,
             //  there are used to know the size of the vector and where start looking for the information.
@@ -218,10 +224,9 @@ void addStations(subADT sub, char line, char * name, size_t stationID){
 void addDataTrips(subADT sub, char day, char month, int year, int stationID, int numPassen, char end){
     errno = OK;
 
-    if (sub->dimStation > stationID && sub->station[stationID].name != NULL ){ // This condition helps us know if the station id
+    if (sub->dimStation >= stationID && sub->station[stationID].name != NULL ){ // This condition helps us know if the station id
                                                                               // is from a valid station.
         sub->station[stationID].passenStation += numPassen;
-
         int max = sub->station[stationID].maxYear[month-1]; //Max year of a given month.
 
         char leap = leapYearCalc(year);
@@ -305,8 +310,6 @@ static int getDayOfWeek(size_t day, size_t month, size_t year, size_t leapYear){
 }
 
 
-
-
 void toBeginLines(subADT sub){
     StationLineTop(sub);
     //to make a list with the lines in order of how many passengers they have when the user/frontend asks for it
@@ -314,52 +317,60 @@ void toBeginLines(subADT sub){
     sub->it1=sub->list1;
 }
 
-void toBeginTopbyLine(subADT sub){
+
+static void StationLineTop (subADT sub){
     errno = OK;
-    if (sub == NULL){
-        errno = PARAMERR;
-        return;
+    for(size_t j = sub->minID; j < sub->dimStation; j++){ // We move inside each line to every station.
+        if(sub->station[j].name != NULL){ // We check that the station exists.
+            
+            char line = sub->station[j].line;
+
+            if(sub->dimLines <= POS(line)){
+                sub->lines = realloc(sub->lines, (POS(line)+1)*sizeof(Tline));
+                if(sub->lines == NULL || errno==ENOMEM){
+                    errno=MEMERR;
+                    return;
+                }
+                for(size_t i=sub->dimLines; i < POS(line) + 1; i++){
+                    sub->lines[i].passenTot = 0;
+                    sub->lines[i].top = NULL;
+                }
+                sub->dimLines = POS(line)+1;
+            }
+
+            int TopFlag = 0; //This flag helps not create all the list given that if a station doesn't enter top 3  it quits the comparison.
+            sub->lines[POS(line)].passenTot += sub->station[j].passenStation;
+            sub->lines[POS(line)].top = StationLineTopRec(sub->lines[POS(line)].top, sub->station[j].passenStation, sub->station[j].name, &TopFlag);
+        }
     }
-    sub->it2=0;
 }
 
-int hasNextLine(subADT sub){
+
+static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, int * TopFlag){
     errno = OK;
-    if(sub != NULL){
-        return sub->it1 != NULL;
-    } else{
-        errno = PARAMERR;
-        return 0;
+    if (top == NULL || NumPassen > top->numTot || (NumPassen == top->numTot && strcasecmp(top->name,StationName) > 0)){
+        Tlist aux = malloc(sizeof(struct node));
+        if(errno == ENOMEM || aux == NULL){
+            errno= MEMERR;
+            return top;
+        }
+        aux->name = StationName;
+        aux->numTot = NumPassen;
+        aux->tail = top;
+        return aux;
     }
-}
 
-int hasNextTopbyLine(subADT sub){
-    errno = OK;
-    if (sub == NULL){
-        errno = PARAMERR;
-        return ERROR;
-
+    (*TopFlag)++;
+    if ((*TopFlag) == 3){ // If this condition is true the station doesn't enter top 3, so we don't consider it.
+        return top;
     }
-    return (sub->it2 < sub->dimLines);
-}
-
-
-int nextLine(subADT sub, char * line){
-    errno = OK;
-    if (sub == NULL){
-        errno = PARAMERR;
-        return ERROR;
-
-    }
-    strcpy(line, sub->it1->name);
-    int res=sub->it1->numTot;
-    sub->it1=sub->it1->tail;
-    return res;
+    top->tail = StationLineTopRec(top->tail, NumPassen, StationName, TopFlag);
+    return top;
 }
 
 
 static void addListAmountPassen(subADT sub){
-    for (size_t i=sub->minID; i < sub->dimLines; i++){
+    for (size_t i=0; i < sub->dimLines; i++){
         if(sub->lines[i].passenTot != 0){ // We check that the line has passengers, if they don't we don't include them.
             sub->list1=addListAmountPassenRec(sub->list1, sub->lines[i].passenTot, (char)i + DIFF);
         }
@@ -393,29 +404,48 @@ static Tlist addListAmountPassenRec(Tlist list, size_t numPassen, char line){
     return list;
 }
 
-
-static void StationLineTop (subADT sub){
+int hasNextLine(subADT sub){
     errno = OK;
-    for(size_t j = sub->minID; j < sub->dimStation; j++){ // We move inside each line to every station.
-        if(sub->station[j].name != NULL){ // We check that the station exists.
-            char line = sub->station[j].line;
-            if(sub->dimLines <= POS(line)){
-                sub->lines = realloc(sub->lines, (POS(line)+1)*sizeof(Tline));
-                if(sub->lines == NULL || errno==ENOMEM){
-                    errno=MEMERR;
-                    return;
-                }
-                for(size_t i=sub->dimLines; i < POS(line) + 1; i++){
-                    sub->lines[i].passenTot = 0;
-                    sub->lines[i].top = NULL;
-                }
-                sub->dimLines = POS(line)+1;
-            }
-            char TopFlag = 0; //This flag helps not create all the list given that if a station doesn't enter top 3  it quits the comparison.
-            sub->lines[POS(line)].passenTot += sub->station[j].passenStation;
-            sub->lines[POS(line)].top = StationLineTopRec(sub->lines[POS(line)].top, sub->lines[POS(line)].passenTot, sub->station[j].name, &TopFlag);
-        }
+    if(sub != NULL){
+        return sub->it1 != NULL;
+    } else{
+        errno = PARAMERR;
+        return 0;
     }
+}
+
+int nextLine(subADT sub, char * line){
+    errno = OK;
+    if (sub == NULL){
+        errno = PARAMERR;
+        return ERROR;
+
+    }
+    strcpy(line, sub->it1->name);
+    int res=sub->it1->numTot;
+    sub->it1=sub->it1->tail;
+    return res;
+}
+
+
+void toBeginTopbyLine(subADT sub){
+    errno = OK;
+    if (sub == NULL){
+        errno = PARAMERR;
+        return;
+    }
+    sub->it2=0;
+}
+
+
+int hasNextTopbyLine(subADT sub){
+    errno = OK;
+    if (sub == NULL){
+        errno = PARAMERR;
+        return ERROR;
+
+    }
+    return (sub->it2 < sub->dimLines);
 }
 
 char nextTopbyLine(subADT sub, char * res[TOP]){
@@ -455,33 +485,6 @@ static void returnTopbyLine(Tlist list, char ** res, int * flag){
 
 
 
-static Tlist StationLineTopRec (Tlist top, size_t NumPassen, char * StationName, char * TopFlag){
-    errno = OK;
-    if (top == NULL || NumPassen > top->numTot || (NumPassen == top->numTot && strcasecmp(top->name,StationName) > 0)){
-        Tlist aux = malloc(sizeof(struct node));
-        if(errno == ENOMEM || aux == NULL){
-            errno= MEMERR;
-            return top;
-        }
-        if (NumPassen != 0){ // If there are no trips done the program should print NOTOPSTATION ("S/D"), here we check that.
-            aux->name = StationName;
-        } else{
-            aux->name = NOTOPSTATION;
-        }
-        aux->numTot = NumPassen;
-        aux->tail = top;
-        return aux;
-    }
-
-    (*TopFlag)++;
-    if (*TopFlag == 3){ // If this condition is true the station doesn't enter top 3, so we don't consider it.
-        return top;
-    }
-    top->tail = StationLineTopRec(top->tail, NumPassen, StationName, TopFlag);
-    return top;
-}
-
-
 void toBeginTopPeriod(subADT sub){
     errno = OK;
     if (sub == NULL){
@@ -499,7 +502,7 @@ static size_t TopPeriodStation (subADT sub, int weekday, int period){
     size_t TopID=sub->minID;
     size_t TopStationPassen = 0;
     for (size_t j = sub->minID;  j < sub->dimStation; j++){
-        if (TopStationPassen <= sub->station[j].days[period][weekday]){
+        if (sub->station[j].name != NULL && TopStationPassen <= sub->station[j].days[period][weekday]){
             if (TopStationPassen != sub->station[j].days[period][weekday] || (TopStationPassen == sub->station[j].days[period][weekday] && (strcasecmp(sub->station[TopID].name,sub->station[j].name) > 0))){
                 TopStationPassen = sub->station[j].days[period][weekday];
                 TopID = j;
@@ -511,9 +514,6 @@ static size_t TopPeriodStation (subADT sub, int weekday, int period){
     }
     return TopID;
 }
-
-
-
 
 char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
     errno = OK;
@@ -533,9 +533,21 @@ char * getTopStationPeriod (subADT sub, int period, int weekday, char * line){
 }
 
 
+void toBeginAvgTop(subADT sub){
+    errno = OK;
+    if (sub == NULL){
+        errno = PARAMERR;
+        return;
+    }
+    TopStationMonth(sub);
+    sub->it4 = sub->list4;
+}
+
+
 
 static void TopStationMonth(subADT sub){
     for(size_t j=sub->minID; j < sub->dimStation; j++){
+        if(sub->station[j].name != NULL){
             char  topMonth = 0;
             float  monthAvg = 0;
             size_t topYear = bestStationMonth(sub->station[j], &topMonth, &monthAvg, sub->yearStart);
@@ -544,6 +556,7 @@ static void TopStationMonth(subADT sub){
             }
         }
     }
+}
 
 
 
@@ -577,7 +590,7 @@ static size_t bestStationMonth(Tstation station, char * topMonth, float * monthA
 
 static avgTop * createAvgTopRec(avgTop * list, char * topMonth, size_t topYear, float * monthAvg, char line, char * name){
     errno = OK;
-    if(list == NULL || (*monthAvg)  >= list->avg || (((*monthAvg) == list->avg) && strcasecmp(list->name, name) > 0) ){
+    if(list == NULL || (*monthAvg)  > list->avg || (((*monthAvg) == list->avg) && strcasecmp(list->name, name) > 0) ){
             avgTop * aux = malloc(sizeof(struct avgTop));
             if(aux == NULL){
                 errno = MEMERR;
@@ -596,15 +609,6 @@ static avgTop * createAvgTopRec(avgTop * list, char * topMonth, size_t topYear, 
     return list;
 }
 
-void toBeginAvgTop(subADT sub){
-    errno = OK;
-    if (sub == NULL){
-        errno = PARAMERR;
-        return;
-    }
-    TopStationMonth(sub);
-    sub->it4 = sub->list4;
-}
 
 int hasNextAvgTop(subADT sub){
     errno = OK;
@@ -612,7 +616,7 @@ int hasNextAvgTop(subADT sub){
         errno = PARAMERR;
         return ERROR;
     }
-    return sub->it4 != NULL && sub->it4->tail != NULL;
+    return sub->it4 != NULL;
 }
 
 float NextAvgTop(subADT sub, char * station, char * line, size_t * year, char * month){
@@ -688,5 +692,3 @@ static void freeLine(Tlist list){
     free(list->name);
     free(list);
 }
-
-
